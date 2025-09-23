@@ -2,13 +2,9 @@ import * as XLSX from 'xlsx'
 import { supabase, DadosEmpresa } from './supabase'
 
 // Função para converter tempo HH:MM:SS para segundos ou manter formato
-const parseTime = (timeStr: string): string => {
-  if (!timeStr || timeStr.trim() === '') return '00:00:00'
-  
-  // Se já está no formato correto, retorna
-  if (typeof timeStr === 'string' && timeStr.includes(':')) {
-    return timeStr
-  }
+const parseTime = (timeStr: any): string => {
+  // Se é null, undefined ou vazio, retorna padrão
+  if (!timeStr || timeStr === null || timeStr === undefined) return '00:00:00'
   
   // Se é um número (Excel pode converter para número decimal)
   if (typeof timeStr === 'number') {
@@ -19,7 +15,19 @@ const parseTime = (timeStr: string): string => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
   }
   
-  return timeStr.toString()
+  // Converte para string primeiro
+  const timeString = timeStr.toString().trim()
+  
+  // Se está vazio após conversão, retorna padrão
+  if (!timeString || timeString === '') return '00:00:00'
+  
+  // Se já está no formato correto, retorna
+  if (timeString.includes(':')) {
+    return timeString
+  }
+  
+  // Se chegou aqui, tenta converter de volta para string
+  return timeString
 }
 
 // Função para validar e converter linha do Excel
@@ -27,21 +35,22 @@ const validateAndConvertRow = (row: any): DadosEmpresa | null => {
   try {
     // Validações básicas
     if (!row.data_do_periodo || !row.pessoa_entregadora) {
+      console.log('❌ Linha inválida - falta data_do_periodo ou pessoa_entregadora')
       return null
     }
 
-    return {
-      data_do_periodo: row.data_do_periodo,
-      periodo: row.periodo || '',
+    const convertedRow = {
+      data_do_periodo: row.data_do_periodo?.toString() || '',
+      periodo: row.periodo?.toString() || '',
       duracao_do_periodo: parseTime(row.duracao_do_periodo),
       numero_minimo_de_entregadores_regulares_na_escala: parseInt(row.numero_minimo_de_entregadores_regulares_na_escala) || 0,
-      tag: row.tag || '',
+      tag: row.tag?.toString() || '',
       id_da_pessoa_entregadora: row.id_da_pessoa_entregadora?.toString() || '',
-      pessoa_entregadora: row.pessoa_entregadora || '',
-      praca: row.praca || '',
-      sub_praca: row.sub_praca || '',
-      origem: row.origem || '',
-      tempo_disponivel_escalado: row.tempo_disponivel_escalado || '',
+      pessoa_entregadora: row.pessoa_entregadora?.toString() || '',
+      praca: row.praca?.toString() || '',
+      sub_praca: row.sub_praca?.toString() || '',
+      origem: row.origem?.toString() || '',
+      tempo_disponivel_escalado: row.tempo_disponivel_escalado?.toString() || '',
       tempo_disponivel_absoluto: parseTime(row.tempo_disponivel_absoluto),
       numero_de_corridas_ofertadas: parseInt(row.numero_de_corridas_ofertadas) || 0,
       numero_de_corridas_aceitas: parseInt(row.numero_de_corridas_aceitas) || 0,
@@ -51,8 +60,11 @@ const validateAndConvertRow = (row: any): DadosEmpresa | null => {
       numero_de_pedidos_aceitos_e_concluidos: parseInt(row.numero_de_pedidos_aceitos_e_concluidos) || 0,
       soma_das_taxas_das_corridas_aceitas: parseFloat(row.soma_das_taxas_das_corridas_aceitas) || 0
     }
+
+    console.log('✅ Linha convertida com sucesso')
+    return convertedRow
   } catch (error) {
-    console.error('Erro ao converter linha:', error)
+    console.error('❌ Erro ao converter linha:', error, 'Dados da linha:', row)
     return null
   }
 }
