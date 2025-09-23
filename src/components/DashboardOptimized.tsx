@@ -65,7 +65,6 @@ export default function DashboardOptimized() {
 
   // Filtros temporariamente desativados
   const handleFiltersChange = useCallback((newFilters: DashboardFiltersType) => {
-    console.log('Filtros mudaram, mas estão desativados temporariamente:', newFilters)
     setFilters(newFilters)
   }, [])
 

@@ -22,7 +22,7 @@ export class CitiesManager {
       console.log('🏙️ CitiesManager: Buscando cidades disponíveis...')
 
       const { data, error } = await this.supabase
-        .from('dados_empresa')
+        .from('delivery_data')
         .select('praca, sub_praca, created_at')
         .order('praca')
 
@@ -88,7 +88,7 @@ export class CitiesManager {
   async getSubPracasByCity(praca: string): Promise<string[]> {
     try {
       const { data, error } = await this.supabase
-        .from('dados_empresa')
+        .from('delivery_data')
         .select('sub_praca')
         .eq('praca', praca)
         .order('sub_praca')
@@ -113,7 +113,7 @@ export class CitiesManager {
   async cityExists(praca: string): Promise<boolean> {
     try {
       const { data, error } = await this.supabase
-        .from('dados_empresa')
+        .from('delivery_data')
         .select('praca')
         .eq('praca', praca)
         .limit(1)

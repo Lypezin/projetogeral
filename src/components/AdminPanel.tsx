@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/providers/auth-provider'
 import { createClient } from '@/lib/supabase-client'
-import { Users, Shield, MapPin, Plus, Edit2, Trash2, Save, X } from 'lucide-react'
+import { Users, Shield, MapPin, Edit2, Trash2, Save, X } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { UserPermission } from '@/lib/supabase-client'
 import { citiesManager, CityData } from '@/lib/cities-manager'

@@ -22,8 +22,7 @@ export default function Home() {
   // Debug: mostrar informações de loading
   console.log('🏠 HomePage: Renderizando...')
   console.log('👤 HomePage - User:', user?.email)
-  console.log('📋 HomePage - Permissions:', permissions)
-  console.log('🔄 HomePage - Loading:', loading)
+  console.log('👑 HomePage - É admin?', permissions?.is_admin)
 
   // Mostrar loading enquanto verifica autenticação
   if (loading) {
@@ -45,8 +44,6 @@ export default function Home() {
   }
 
   // Se está logado, mostrar dashboard
-  console.log('🏠 HomePage: Usuário logado, mostrando dashboard...')
-  console.log('👑 HomePage: É admin?', permissions?.is_admin)
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -77,17 +74,6 @@ export default function Home() {
             )}
           </div>
 
-          {/* Debug: Status das permissões */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <h3 className="text-sm font-semibold text-blue-900 mb-2">Debug - Status do Sistema:</h3>
-            <div className="text-xs text-blue-800 space-y-1">
-              <p><strong>Usuário:</strong> {user?.email || 'Não logado'}</p>
-              <p><strong>ID do Usuário:</strong> {user?.id || 'N/A'}</p>
-              <p><strong>Permissões:</strong> {permissions ? JSON.stringify(permissions) : 'Nenhuma'}</p>
-              <p><strong>É Admin:</strong> {permissions?.is_admin ? '✅ Sim' : '❌ Não'}</p>
-              <p><strong>Loading:</strong> {loading ? '⏳ Sim' : '✅ Não'}</p>
-            </div>
-          </div>
 
           {/* Painel Administrativo (apenas para admins) */}
           {permissions?.is_admin && showAdminPanel && (
