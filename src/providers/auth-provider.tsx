@@ -19,8 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [permissions, setPermissions] = useState<UserPermission | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [isInitialized, setIsInitialized] = useState(false)
+  const [loading, setLoading] = useState(false) // Iniciar com false
   const supabase = createClient()
 
   const fetchUserPermissions = useCallback(async (userId: string) => {
@@ -44,19 +43,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const refreshPermissions = useCallback(async () => {
-    if (user) {
-      const userPermissions = await fetchUserPermissions(user.id)
-      setPermissions(userPermissions)
-    } else {
-      setPermissions(null)
-    }
-  }, [user, fetchUserPermissions])
+    // Função simplificada - apenas para compatibilidade
+    console.log('Refresh permissions chamado')
+  }, [])
 
   useEffect(() => {
     let mounted = true
 
-    // Verificar usuário atual apenas uma vez
-    const getInitialUser = async () => {
+    // Definir loading como true apenas durante a verificação
+    setLoading(true)
+
+    // Verificar usuário atual
+    const initializeAuth = async () => {
       try {
         const { data: { user }, error } = await supabase.auth.getUser()
 
@@ -67,13 +65,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null)
           setPermissions(null)
           setLoading(false)
-          setIsInitialized(true)
           return
         }
 
         setUser(user)
 
         if (user) {
+          // Buscar permissões
           const userPermissions = await fetchUserPermissions(user.id)
           if (mounted) {
             setPermissions(userPermissions)
@@ -84,20 +82,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (mounted) {
           setLoading(false)
-          setIsInitialized(true)
         }
       } catch (error) {
-        console.error('Erro inesperado ao verificar usuário:', error)
+        console.error('Erro ao inicializar auth:', error)
         if (mounted) {
           setUser(null)
           setPermissions(null)
           setLoading(false)
-          setIsInitialized(true)
         }
       }
     }
 
-    getInitialUser()
+    initializeAuth()
 
     // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -129,14 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [fetchUserPermissions]) // Adicionado fetchUserPermissions como dependência
-
-  // Atualizar permissões quando isInitialized mudar
-  useEffect(() => {
-    if (isInitialized) {
-      refreshPermissions()
-    }
-  }, [isInitialized, refreshPermissions])
+  }, []) // Sem dependências para evitar loops
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({

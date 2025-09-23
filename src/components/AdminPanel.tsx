@@ -30,9 +30,42 @@ export default function AdminPanel() {
   }>({ allowed_pracas: [], is_admin: false })
   const supabase = createClient()
 
+  // Debug: mostrar informações de permissões
+  console.log('AdminPanel - User:', user?.email)
+  console.log('AdminPanel - Permissions:', permissions)
+  console.log('AdminPanel - Is Admin:', permissions?.is_admin)
+
   // Verificar se o usuário é admin
   if (!permissions?.is_admin) {
-    return null // Não mostrar nada para não-admins
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 mb-8">
+        <div className="flex items-center">
+          <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center mr-4">
+            <span className="text-2xl">⚠️</span>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+              Painel Administrativo - Acesso Negado
+            </h3>
+            <div className="text-sm text-yellow-800 space-y-1">
+              <p><strong>Usuário:</strong> {user?.email || 'Não logado'}</p>
+              <p><strong>Permissões:</strong> {permissions ? JSON.stringify(permissions) : 'Nenhuma'}</p>
+              <p><strong>Is Admin:</strong> {permissions?.is_admin ? 'Sim' : 'Não'}</p>
+              <p className="mt-2">
+                <strong>Solução:</strong> Execute este SQL no Supabase para se tornar admin:
+              </p>
+              <code className="block bg-yellow-100 p-2 rounded mt-2 text-xs">
+                INSERT INTO user_permissions (user_id, is_admin)<br/>
+                SELECT id, TRUE<br/>
+                FROM auth.users<br/>
+                WHERE email = '{user?.email || 'SEU_EMAIL'}'<br/>
+                ON CONFLICT (user_id) DO UPDATE SET is_admin = TRUE;
+              </code>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   useEffect(() => {
