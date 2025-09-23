@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { Toaster } from 'react-hot-toast'
 import ImportExcel from '@/components/ImportExcel'
 import Dashboard from '@/components/Dashboard'
+import TableChecker from '@/components/TableChecker'
 
 export default function Home() {
   const [refreshKey, setRefreshKey] = useState(0)
@@ -46,6 +47,9 @@ export default function Home() {
             Sistema de importação e análise de dados de entregadores
           </p>
         </div>
+
+        {/* Verificação do Supabase */}
+        <TableChecker />
 
         {/* Componente de Importação */}
         <ImportExcel onImportComplete={handleImportComplete} />

@@ -111,7 +111,7 @@ export const importDataInBatches = async (
     
     try {
       const { error } = await supabase
-        .from('dados_empresa') // Nome da tabela no Supabase
+        .from('dados_empresa')
         .insert(batch)
       
       if (error) {
@@ -141,9 +141,36 @@ export const importDataInBatches = async (
   return { success, errors, errorDetails }
 }
 
+// Função para verificar se a tabela existe e obter informações
+export const checkTable = async () => {
+  try {
+    // Tenta fazer uma query simples para verificar se a tabela existe
+    const { data, error } = await supabase
+      .from('dados_empresa')
+      .select('*')
+      .limit(1)
+    
+    if (error) {
+      console.error('Erro ao verificar tabela:', error)
+      return { exists: false, error: error.message }
+    }
+    
+    return { exists: true, error: null }
+  } catch (error) {
+    console.error('Erro ao verificar tabela:', error)
+    return { exists: false, error: error.toString() }
+  }
+}
+
 // Função para obter estatísticas dos dados
 export const getDataStats = async () => {
   try {
+    // Primeiro verifica se a tabela existe
+    const tableCheck = await checkTable()
+    if (!tableCheck.exists) {
+      throw new Error(`Tabela 'dados_empresa' não encontrada: ${tableCheck.error}`)
+    }
+
     const { data, error } = await supabase
       .from('dados_empresa')
       .select(`
