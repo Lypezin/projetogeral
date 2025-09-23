@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase-client'
 import { Users, Shield, MapPin, Plus, Edit2, Trash2, Save, X } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { UserPermission } from '@/lib/supabase-client'
+import { citiesManager, CityData } from '@/lib/cities-manager'
 
 interface User {
   id: string
@@ -22,6 +23,7 @@ export default function AdminPanel() {
   const { user, permissions } = useAuth()
   const [users, setUsers] = useState<UserWithPermissions[]>([])
   const [availablePracas, setAvailablePracas] = useState<string[]>([])
+  const [availableCities, setAvailableCities] = useState<CityData[]>([])
   const [loading, setLoading] = useState(true)
   const [editingUser, setEditingUser] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<{
@@ -149,7 +151,7 @@ export default function AdminPanel() {
 
   const loadData = async () => {
     setLoading(true)
-    await Promise.all([loadUsers(), loadAvailablePracas()])
+    await Promise.all([loadUsers(), loadAvailableCities()])
     setLoading(false)
   }
 
@@ -205,23 +207,21 @@ export default function AdminPanel() {
     }
   }
 
-  const loadAvailablePracas = async () => {
+  const loadAvailableCities = async () => {
     try {
-      const { data, error } = await supabase
-        .from('delivery_data')
-        .select('praca')
-        .not('praca', 'is', null)
-        .neq('praca', '')
-
-      if (error) {
-        console.warn('Erro ao carregar praças:', error)
-        return
-      }
-
-      const uniquePracas = Array.from(new Set(data.map((item: any) => item.praca))).sort() as string[]
-      setAvailablePracas(uniquePracas)
+      console.log('🏙️ AdminPanel: Carregando cidades dinâmicas...')
+      
+      // Usar CitiesManager para carregar cidades dinâmicas
+      const cities = await citiesManager.getAvailableCities()
+      setAvailableCities(cities)
+      
+      const citiesList = cities.map(city => city.praca)
+      setAvailablePracas(citiesList)
+      
+      console.log('✅ AdminPanel: Cidades carregadas:', cities.length)
     } catch (error) {
-      console.error('Erro ao carregar praças:', error)
+      console.error('❌ AdminPanel: Erro ao carregar cidades:', error)
+      toast.error('Erro ao carregar cidades')
     }
   }
 
@@ -240,17 +240,29 @@ export default function AdminPanel() {
 
   const savePermissions = async (userId: string) => {
     try {
+      console.log('💾 AdminPanel: Salvando permissões para:', userId)
+      console.log('🏙️ AdminPanel: Cidades permitidas:', editForm.allowed_pracas)
+      
+      // Usar CitiesManager para atualizar permissões de cidades
+      const success = await citiesManager.updateUserCityPermissions(userId, editForm.allowed_pracas)
+      
+      if (!success) {
+        toast.error('Erro ao salvar permissões de cidades')
+        return
+      }
+
+      // Atualizar status de admin
       const { error } = await supabase
         .from('user_permissions')
         .upsert({
           user_id: userId,
-          allowed_pracas: editForm.allowed_pracas,
           is_admin: editForm.is_admin,
           updated_at: new Date().toISOString()
         })
 
       if (error) {
-        toast.error('Erro ao salvar permissões')
+        console.error('❌ AdminPanel: Erro ao atualizar status de admin:', error)
+        toast.error('Erro ao atualizar status de admin')
         return
       }
 
@@ -258,6 +270,7 @@ export default function AdminPanel() {
       setEditingUser(null)
       await loadUsers()
     } catch (error) {
+      console.error('💥 AdminPanel: Erro inesperado ao salvar permissões:', error)
       toast.error('Erro inesperado ao salvar permissões')
     }
   }
@@ -323,11 +336,61 @@ export default function AdminPanel() {
           </div>
         </div>
         <div className="text-right">
-          <span className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 rounded-xl text-sm font-semibold border border-blue-200">
-            <Users className="w-4 h-4 mr-2" />
-            {users.length} usuário(s)
+          <div className="flex gap-3">
+            <span className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 rounded-xl text-sm font-semibold border border-blue-200">
+              <Users className="w-4 h-4 mr-2" />
+              {users.length} usuário(s)
+            </span>
+            <span className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 rounded-xl text-sm font-semibold border border-green-200">
+              <MapPin className="w-4 h-4 mr-2" />
+              {availableCities.length} cidade(s)
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Cidades Disponíveis */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <MapPin className="w-5 h-5 mr-2 text-green-600" />
+            Cidades Disponíveis no Sistema
+          </h3>
+          <span className="text-sm text-gray-500">
+            {availableCities.length} cidade(s) importada(s)
           </span>
         </div>
+        
+        {availableCities.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {availableCities.map((city: CityData) => (
+              <div key={city.praca} className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-semibold text-green-900">{city.praca}</h4>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                    {city.count} registros
+                  </span>
+                </div>
+                <div className="text-sm text-green-700">
+                  <p><strong>Sub-praças:</strong> {city.sub_pracas.length}</p>
+                  <p><strong>Último import:</strong> {new Date(city.last_import).toLocaleDateString('pt-BR')}</p>
+                </div>
+                <div className="mt-2">
+                  <div className="text-xs text-green-600">
+                    {city.sub_pracas.slice(0, 3).join(', ')}
+                    {city.sub_pracas.length > 3 && ` +${city.sub_pracas.length - 3} mais`}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <p>Nenhuma cidade importada ainda</p>
+            <p className="text-sm">Importe dados para ver as cidades disponíveis</p>
+          </div>
+        )}
       </div>
 
       {/* Lista de Usuários */}

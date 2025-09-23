@@ -12,6 +12,7 @@ import AdminPanel from '@/components/AdminPanel'
 export default function Home() {
   const { user, permissions, loading } = useAuth()
   const [refreshKey, setRefreshKey] = useState(0)
+  const [showAdminPanel, setShowAdminPanel] = useState(false)
 
   const handleImportComplete = () => {
     // Força o dashboard a recarregar os dados
@@ -61,6 +62,19 @@ export default function Home() {
             <p className="text-lg text-gray-600">
               Sistema de importação e análise de dados de entregadores
             </p>
+            
+            {/* Botão de Admin */}
+            {permissions?.is_admin && (
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowAdminPanel(!showAdminPanel)}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-3 mx-auto"
+                >
+                  <span className="text-2xl">👑</span>
+                  {showAdminPanel ? 'Fechar Painel Admin' : 'Abrir Painel Admin'}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Debug: Status das permissões */}
@@ -76,10 +90,10 @@ export default function Home() {
           </div>
 
           {/* Painel Administrativo (apenas para admins) */}
-          {permissions?.is_admin && (
+          {permissions?.is_admin && showAdminPanel && (
             <>
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                <p className="text-green-800 text-sm">✅ Usuário é administrador - Mostrando painel admin</p>
+                <p className="text-green-800 text-sm">✅ Usuário é administrador - Painel admin ativo</p>
               </div>
               <AdminPanel />
             </>
