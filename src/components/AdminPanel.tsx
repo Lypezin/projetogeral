@@ -149,7 +149,7 @@ export default function AdminPanel() {
           return
         }
         
-        setUsers(permissionsData.map(perm => ({
+        setUsers(permissionsData.map((perm: any) => ({
           id: perm.user_id,
           email: 'Usuario com permissões',
           created_at: perm.created_at,
@@ -170,7 +170,7 @@ export default function AdminPanel() {
       // Combinar dados
       const usersWithPermissions = authUsers.users
         .filter(authUser => authUser.email) // Filtrar usuários sem email
-        .map(authUser => ({
+        .map((authUser: any) => ({
           id: authUser.id,
           email: authUser.email!,
           created_at: authUser.created_at,
@@ -198,7 +198,7 @@ export default function AdminPanel() {
         return
       }
 
-      const uniquePracas = Array.from(new Set(data.map(item => item.praca))).sort()
+      const uniquePracas = Array.from(new Set(data.map((item: any) => item.praca))).sort()
       setAvailablePracas(uniquePracas)
     } catch (error) {
       console.error('Erro ao carregar praças:', error)
@@ -312,7 +312,7 @@ export default function AdminPanel() {
 
       {/* Lista de Usuários */}
       <div className="space-y-6">
-        {users.map((userItem) => (
+        {users.map((userItem: any) => (
           <div key={userItem.id} className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200">
             <div className="flex items-center justify-between">
               {/* Informações do usuário */}
@@ -435,7 +435,7 @@ export default function AdminPanel() {
                         Praças permitidas:
                       </label>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-                        {availablePracas.map((praca) => (
+                        {availablePracas.map((praca: string) => (
                           <label key={praca} className="flex items-center">
                             <input
                               type="checkbox"
@@ -503,7 +503,7 @@ export default function AdminPanel() {
                           <div className="p-4 bg-white border border-gray-200 rounded-xl">
                             <p className="text-sm font-medium text-gray-700 mb-3">Praças permitidas:</p>
                             <div className="flex flex-wrap gap-2">
-                              {userItem.permissions.allowed_pracas.map((praca) => (
+                              {userItem.permissions.allowed_pracas.map((praca: string) => (
                                 <span
                                   key={praca}
                                   className="inline-flex items-center px-3 py-2 bg-blue-100 text-blue-800 text-sm rounded-lg border border-blue-200"
