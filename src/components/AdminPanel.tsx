@@ -32,19 +32,7 @@ export default function AdminPanel() {
 
   // Verificar se o usuário é admin
   if (!permissions?.is_admin) {
-    return (
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <div className="text-center py-8">
-          <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Acesso Restrito
-          </h3>
-          <p className="text-gray-600">
-            Você precisa de permissões de administrador para acessar este painel.
-          </p>
-        </div>
-      </div>
-    )
+    return null // Não mostrar nada para não-admins
   }
 
   useEffect(() => {
@@ -210,40 +198,59 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-8">
+      {/* Header Moderno */}
+      <div className="flex items-center justify-between mb-8">
         <div className="flex items-center">
-          <Users className="mr-3 h-6 w-6 text-blue-600" />
-          <h2 className="text-xl font-bold text-gray-800">
-            Painel Administrativo
-          </h2>
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mr-4">
+            <Shield className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Painel Administrativo
+            </h2>
+            <p className="text-gray-600 mt-1">
+              Gerencie usuários e permissões de acesso
+            </p>
+          </div>
         </div>
-        <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
-          {users.length} usuário(s)
-        </span>
+        <div className="text-right">
+          <span className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 rounded-xl text-sm font-semibold border border-blue-200">
+            <Users className="w-4 h-4 mr-2" />
+            {users.length} usuário(s)
+          </span>
+        </div>
       </div>
 
       {/* Lista de Usuários */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         {users.map((userItem) => (
-          <div key={userItem.id} className="border border-gray-200 rounded-lg p-4">
+          <div key={userItem.id} className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200">
             <div className="flex items-center justify-between">
               {/* Informações do usuário */}
               <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Users className="w-5 h-5 text-blue-600" />
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center shadow-sm">
+                  <Users className="w-7 h-7 text-blue-600" />
                 </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">{userItem.email}</h3>
-                  <div className="flex items-center space-x-2 text-sm text-gray-500">
-                    <span>ID: {userItem.id.slice(0, 8)}...</span>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900">{userItem.email}</h3>
                     {userItem.permissions?.is_admin && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      <span className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 rounded-full text-xs font-bold border border-purple-300">
                         <Shield className="w-3 h-3 mr-1" />
-                        Admin
+                        ADMINISTRADOR
                       </span>
                     )}
+                  </div>
+                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <span className="flex items-center">
+                      <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                      ID: {userItem.id.slice(0, 8)}...
+                    </span>
+                    <span className="flex items-center">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
+                      Cadastrado: {new Date(userItem.created_at).toLocaleDateString('pt-BR')}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -254,35 +261,39 @@ export default function AdminPanel() {
                   <>
                     <button
                       onClick={() => savePermissions(userItem.id)}
-                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                      title="Salvar"
+                      className="flex items-center px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                      title="Salvar alterações"
                     >
-                      <Save className="w-4 h-4" />
+                      <Save className="w-4 h-4 mr-2" />
+                      Salvar
                     </button>
                     <button
                       onClick={cancelEditing}
-                      className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-                      title="Cancelar"
+                      className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200"
+                      title="Cancelar edição"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-4 h-4 mr-2" />
+                      Cancelar
                     </button>
                   </>
                 ) : (
                   <>
                     <button
                       onClick={() => startEditing(userItem)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
                       title="Editar permissões"
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Edit2 className="w-4 h-4 mr-2" />
+                      Editar
                     </button>
                     {userItem.permissions && (
                       <button
                         onClick={() => deletePermissions(userItem.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="flex items-center px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-sm hover:shadow-md"
                         title="Remover permissões"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Remover
                       </button>
                     )}
                   </>
@@ -292,20 +303,41 @@ export default function AdminPanel() {
 
             {/* Formulário de edição */}
             {editingUser === userItem.id && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="space-y-4">
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="space-y-6">
                   {/* Admin toggle */}
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`admin-${userItem.id}`}
-                      checked={editForm.is_admin}
-                      onChange={(e) => setEditForm({ ...editForm, is_admin: e.target.checked })}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor={`admin-${userItem.id}`} className="ml-2 text-sm text-gray-900">
-                      Administrador (acesso completo)
-                    </label>
+                  <div className="bg-gradient-to-r from-gray-50 to-blue-50 border border-blue-200 rounded-2xl p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3">
+                          <Shield className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900">Tipo de Acesso</h4>
+                          <p className="text-gray-600 text-sm">Defina o nível de permissão do usuário</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            id={`admin-${userItem.id}`}
+                            checked={editForm.is_admin}
+                            onChange={(e) => setEditForm({ ...editForm, is_admin: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-14 h-8 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-blue-600 peer-checked:to-blue-700"></div>
+                          <span className="ml-3 text-sm font-medium text-gray-900">
+                            {editForm.is_admin ? 'Administrador' : 'Usuário'}
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-4 rounded-xl bg-white border border-blue-100">
+                      <p className="text-sm text-gray-700">
+                        <strong>Administrador:</strong> Acesso completo a todos os dados e painel de gerenciamento
+                      </p>
+                    </div>
                   </div>
 
                   {/* Seleção de praças */}
@@ -342,22 +374,61 @@ export default function AdminPanel() {
 
             {/* Permissões atuais */}
             {editingUser !== userItem.id && userItem.permissions && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
-                  {userItem.permissions.is_admin ? (
-                    <span className="flex items-center">
-                      <Shield className="w-4 h-4 mr-1 text-purple-600" />
-                      Acesso administrativo completo
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      <MapPin className="w-4 h-4 mr-1 text-blue-600" />
-                      {userItem.permissions.allowed_pracas.length > 0
-                        ? `${userItem.permissions.allowed_pracas.length} praça(s): ${userItem.permissions.allowed_pracas.slice(0, 3).join(', ')}${userItem.permissions.allowed_pracas.length > 3 ? '...' : ''}`
-                        : 'Nenhuma praça permitida'
-                      }
-                    </span>
-                  )}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                      <Shield className="w-4 h-4 text-blue-600" />
+                    </div>
+                    Permissões Atuais
+                  </h4>
+
+                  <div className="space-y-4">
+                    {userItem.permissions.is_admin ? (
+                      <div className="flex items-center p-4 bg-gradient-to-r from-purple-100 to-purple-200 border border-purple-300 rounded-xl">
+                        <div className="w-10 h-10 bg-purple-200 rounded-xl flex items-center justify-center mr-4">
+                          <Shield className="w-5 h-5 text-purple-700" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-purple-900 uppercase tracking-wide">Administrador</p>
+                          <p className="text-sm text-purple-800">Acesso completo a todos os dados e painel de gerenciamento</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex items-center p-4 bg-white border border-gray-200 rounded-xl">
+                          <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-4">
+                            <MapPin className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-gray-900 uppercase tracking-wide">Usuário Regional</p>
+                            <p className="text-sm text-gray-600">
+                              {userItem.permissions.allowed_pracas.length > 0
+                                ? `${userItem.permissions.allowed_pracas.length} praça(s) permitida(s)`
+                                : 'Nenhuma praça permitida'
+                              }
+                            </p>
+                          </div>
+                        </div>
+
+                        {userItem.permissions.allowed_pracas.length > 0 && (
+                          <div className="p-4 bg-white border border-gray-200 rounded-xl">
+                            <p className="text-sm font-medium text-gray-700 mb-3">Praças permitidas:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {userItem.permissions.allowed_pracas.map((praca) => (
+                                <span
+                                  key={praca}
+                                  className="inline-flex items-center px-3 py-2 bg-blue-100 text-blue-800 text-sm rounded-lg border border-blue-200"
+                                >
+                                  {praca}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -365,27 +436,134 @@ export default function AdminPanel() {
         ))}
 
         {users.length === 0 && (
-          <div className="text-center py-8">
-            <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="text-center py-12">
+            <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <Users className="w-10 h-10 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">
               Nenhum usuário encontrado
             </h3>
-            <p className="text-gray-600">
-              Os usuários aparecerão aqui após fazerem login no sistema.
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              Os usuários aparecerão aqui automaticamente após fazerem login no sistema.
+              Você pode então configurar as permissões de cada um.
             </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 max-w-lg mx-auto">
+              <div className="flex items-center mb-4">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                  <span className="text-blue-600 text-sm">ℹ️</span>
+                </div>
+                <h4 className="text-lg font-medium text-blue-900">Como funciona?</h4>
+              </div>
+              <div className="text-left space-y-3 text-sm text-blue-800">
+                <div className="flex items-start">
+                  <div className="w-5 h-5 bg-blue-200 rounded-full flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">
+                    <span className="text-xs font-bold text-blue-700">1</span>
+                  </div>
+                  <p>Usuários aparecem automaticamente quando fazem login</p>
+                </div>
+                <div className="flex items-start">
+                  <div className="w-5 h-5 bg-blue-200 rounded-full flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">
+                    <span className="text-xs font-bold text-blue-700">2</span>
+                  </div>
+                  <p>Clique em "Editar" para configurar permissões</p>
+                </div>
+                <div className="flex items-start">
+                  <div className="w-5 h-5 bg-blue-200 rounded-full flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">
+                    <span className="text-xs font-bold text-blue-700">3</span>
+                  </div>
+                  <p>Escolha entre Admin (acesso total) ou Usuário Regional (praças específicas)</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
 
       {/* Instruções */}
-      <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h4 className="font-medium text-blue-800 mb-2">Instruções:</h4>
-        <ul className="text-sm text-blue-700 space-y-1">
-          <li>• <strong>Administradores</strong> têm acesso completo a todos os dados</li>
-          <li>• <strong>Usuários regulares</strong> só veem dados das praças permitidas</li>
-          <li>• Usuários sem permissões não conseguem acessar o dashboard</li>
-          <li>• Execute o SQL em <code>database-setup.sql</code> para configurar as tabelas</li>
-        </ul>
+      <div className="mt-8 p-8 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border border-blue-200 rounded-2xl">
+        <div className="flex items-center mb-6">
+          <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mr-4">
+            <span className="text-2xl">🚀</span>
+          </div>
+          <div>
+            <h4 className="text-xl font-bold text-blue-900 mb-1">Como Usar o Sistema</h4>
+            <p className="text-blue-700">Guia completo para gerenciar permissões</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div className="bg-white border border-blue-100 rounded-xl p-4">
+              <h5 className="font-semibold text-blue-900 mb-2 flex items-center">
+                <div className="w-6 h-6 bg-blue-200 rounded-lg flex items-center justify-center mr-2">
+                  <span className="text-xs font-bold text-blue-700">1</span>
+                </div>
+                Configurar Admin
+              </h5>
+              <p className="text-sm text-blue-800">
+                Você já está configurado como administrador e pode gerenciar outros usuários
+              </p>
+            </div>
+
+            <div className="bg-white border border-green-100 rounded-xl p-4">
+              <h5 className="font-semibold text-green-900 mb-2 flex items-center">
+                <div className="w-6 h-6 bg-green-200 rounded-lg flex items-center justify-center mr-2">
+                  <span className="text-xs font-bold text-green-700">2</span>
+                </div>
+                Adicionar Usuários
+              </h5>
+              <p className="text-sm text-green-800">
+                Usuários aparecem automaticamente quando fazem login no sistema
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="bg-white border border-purple-100 rounded-xl p-4">
+              <h5 className="font-semibold text-purple-900 mb-2 flex items-center">
+                <div className="w-6 h-6 bg-purple-200 rounded-lg flex items-center justify-center mr-2">
+                  <span className="text-xs font-bold text-purple-700">3</span>
+                </div>
+                Definir Permissões
+              </h5>
+              <p className="text-sm text-purple-800">
+                Escolha entre Admin (acesso total) ou Usuário Regional (praças específicas)
+              </p>
+            </div>
+
+            <div className="bg-white border border-orange-100 rounded-xl p-4">
+              <h5 className="font-semibold text-orange-900 mb-2 flex items-center">
+                <div className="w-6 h-6 bg-orange-200 rounded-lg flex items-center justify-center mr-2">
+                  <span className="text-xs font-bold text-orange-700">4</span>
+                </div>
+                Sistema Filtra Automaticamente
+              </h5>
+              <p className="text-sm text-orange-800">
+                Cada usuário vê apenas os dados das praças permitidas nos gráficos e métricas
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 p-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl">
+          <div className="flex items-start">
+            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3 mt-1">
+              <span className="text-green-600 text-sm">✅</span>
+            </div>
+            <div>
+              <h5 className="font-semibold text-green-900 mb-2">Sistema Pronto!</h5>
+              <p className="text-sm text-green-800 mb-3">
+                O painel administrativo está totalmente funcional. Você pode:
+              </p>
+              <ul className="text-sm text-green-800 space-y-1">
+                <li>• Gerenciar usuários e permissões</li>
+                <li>• Controlar acesso por região</li>
+                <li>• Monitorar dados de forma segura</li>
+                <li>• Sistema de auditoria completo</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
