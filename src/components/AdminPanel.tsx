@@ -31,9 +31,11 @@ export default function AdminPanel() {
   const supabase = createClient()
 
   // Debug: mostrar informações de permissões
-  console.log('AdminPanel - User:', user?.email)
-  console.log('AdminPanel - Permissions:', permissions)
-  console.log('AdminPanel - Is Admin:', permissions?.is_admin)
+  console.log('🔧 AdminPanel: Renderizando...')
+  console.log('👤 AdminPanel - User:', user?.email)
+  console.log('📋 AdminPanel - Permissions:', permissions)
+  console.log('👑 AdminPanel - Is Admin:', permissions?.is_admin)
+  console.log('🔄 AdminPanel - Loading:', loading)
 
   // Verificar se o usuário é admin ou se não há permissões definidas
   if (!permissions?.is_admin && permissions !== null) {

@@ -64,17 +64,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true
+    let isInitialized = false
 
-    // Buscar sessão inicial de forma mais segura
+    console.log('🚀 AuthProvider: Iniciando useEffect')
+
+    // Função para inicializar autenticação
     const initializeAuth = async () => {
+      if (isInitialized) {
+        console.log('⚠️ AuthProvider: Já inicializado, pulando...')
+        return
+      }
+
+      isInitialized = true
+      console.log('🔄 AuthProvider: Inicializando autenticação...')
+
       try {
-        // Primeiro verificar se há sessão ativa
+        setLoading(true)
+        
+        // Aguardar um pouco para evitar race conditions
+        await new Promise(resolve => setTimeout(resolve, 100))
+
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-        if (!mounted) return
+        if (!mounted) {
+          console.log('⚠️ AuthProvider: Componente desmontado, cancelando...')
+          return
+        }
 
         if (sessionError) {
-          console.error('Erro ao verificar sessão:', sessionError)
+          console.error('❌ AuthProvider: Erro ao verificar sessão:', sessionError)
           setUser(null)
           setPermissions(null)
           setLoading(false)
@@ -82,25 +100,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const user = session?.user ?? null
+        console.log('👤 AuthProvider: Usuário encontrado:', user?.email || 'Nenhum')
+
         setUser(user)
 
         if (user) {
-          console.log('Usuário logado:', user.email)
-          // Buscar permissões
+          console.log('🔍 AuthProvider: Buscando permissões para:', user.email)
           const userPermissions = await fetchUserPermissions(user.id)
           if (mounted) {
+            console.log('📋 AuthProvider: Permissões encontradas:', userPermissions)
             setPermissions(userPermissions)
           }
         } else {
-          console.log('Nenhum usuário logado')
+          console.log('🚫 AuthProvider: Nenhum usuário logado')
           setPermissions(null)
         }
 
         if (mounted) {
           setLoading(false)
+          console.log('✅ AuthProvider: Inicialização concluída')
         }
       } catch (error) {
-        console.error('Erro ao inicializar auth:', error)
+        console.error('💥 AuthProvider: Erro na inicialização:', error)
         if (mounted) {
           setUser(null)
           setPermissions(null)
@@ -109,6 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Inicializar apenas uma vez
     initializeAuth()
 
     // Escutar mudanças de autenticação
@@ -116,11 +138,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         if (!mounted) return
 
-        console.log('Auth state changed:', event, session?.user?.email)
+        console.log('🔄 AuthProvider: Auth state changed:', event, session?.user?.email)
 
         setUser(session?.user ?? null)
 
         if (session?.user) {
+          console.log('🔍 AuthProvider: Buscando permissões após mudança de estado...')
           const userPermissions = await fetchUserPermissions(session.user.id)
           if (mounted) {
             setPermissions(userPermissions)
@@ -138,10 +161,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     )
 
     return () => {
+      console.log('🧹 AuthProvider: Cleanup do useEffect')
       mounted = false
       subscription.unsubscribe()
     }
-  }, [fetchUserPermissions]) // Manter dependência necessária
+  }, []) // Removido fetchUserPermissions para evitar loops
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
