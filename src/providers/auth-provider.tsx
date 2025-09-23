@@ -50,33 +50,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true
 
-    // Definir loading como true apenas durante a verificação
-    setLoading(true)
-
-    // Verificar usuário atual
+    // Buscar sessão inicial de forma mais segura
     const initializeAuth = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser()
+        // Primeiro verificar se há sessão ativa
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
         if (!mounted) return
 
-        if (error) {
-          console.error('Erro ao verificar usuário:', error)
+        if (sessionError) {
+          console.error('Erro ao verificar sessão:', sessionError)
           setUser(null)
           setPermissions(null)
           setLoading(false)
           return
         }
 
+        const user = session?.user ?? null
         setUser(user)
 
         if (user) {
+          console.log('Usuário logado:', user.email)
           // Buscar permissões
           const userPermissions = await fetchUserPermissions(user.id)
           if (mounted) {
             setPermissions(userPermissions)
           }
         } else {
+          console.log('Nenhum usuário logado')
           setPermissions(null)
         }
 
@@ -125,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, []) // Sem dependências para evitar loops
+  }, [fetchUserPermissions]) // Manter dependência necessária
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({

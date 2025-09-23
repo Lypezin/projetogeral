@@ -35,8 +35,8 @@ export default function AdminPanel() {
   console.log('AdminPanel - Permissions:', permissions)
   console.log('AdminPanel - Is Admin:', permissions?.is_admin)
 
-  // Verificar se o usuário é admin
-  if (!permissions?.is_admin) {
+  // Verificar se o usuário é admin ou se não há permissões definidas
+  if (!permissions?.is_admin && permissions !== null) {
     return (
       <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 mb-8">
         <div className="flex items-center">
@@ -55,12 +55,65 @@ export default function AdminPanel() {
                 <strong>Solução:</strong> Execute este SQL no Supabase para se tornar admin:
               </p>
               <code className="block bg-yellow-100 p-2 rounded mt-2 text-xs">
-                INSERT INTO user_permissions (user_id, is_admin)<br/>
-                SELECT id, TRUE<br/>
+                INSERT INTO user_permissions (user_id, is_admin, allowed_pracas)<br/>
+                SELECT id, TRUE, ARRAY['Guarulhos', 'São Paulo', 'Campinas', 'Santos']<br/>
                 FROM auth.users<br/>
-                WHERE email = '{user?.email || 'SEU_EMAIL'}'<br/>
-                ON CONFLICT (user_id) DO UPDATE SET is_admin = TRUE;
+                WHERE email = 'foolype@gmail.com'<br/>
+                ON CONFLICT (user_id) DO UPDATE SET is_admin = TRUE, allowed_pracas = ARRAY['Guarulhos', 'São Paulo', 'Campinas', 'Santos'];
               </code>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Se não há permissões definidas (primeira vez), tentar criar automaticamente
+  if (permissions === null && user) {
+    const createPermissions = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_permissions')
+          .insert({
+            user_id: user.id,
+            is_admin: true,
+            allowed_pracas: ['Guarulhos', 'São Paulo', 'Campinas', 'Santos']
+          })
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Erro ao criar permissões:', error)
+        } else {
+          console.log('Permissões criadas com sucesso:', data)
+          // Forçar refresh das permissões
+          window.location.reload()
+        }
+      } catch (error) {
+        console.error('Erro ao criar permissões:', error)
+      }
+    }
+
+    useEffect(() => {
+      createPermissions()
+    }, [user])
+
+    return (
+      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-8">
+        <div className="flex items-center">
+          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
+            <span className="text-2xl">🔧</span>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">
+              Configurando Permissões...
+            </h3>
+            <div className="text-sm text-blue-800 space-y-1">
+              <p><strong>Usuário:</strong> {user.email}</p>
+              <p><strong>Status:</strong> Criando permissões de administrador automaticamente...</p>
+              <p className="mt-2">
+                <strong>Se não funcionar automaticamente, execute o SQL acima.</strong>
+              </p>
             </div>
           </div>
         </div>

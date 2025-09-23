@@ -3,6 +3,13 @@
 -- Dashboard Empresarial - Sistema de Autenticação e Permissões
 -- ===============================================
 
+-- CONFIGURAÇÃO RÁPIDA PARA TESTE
+-- Execute este comando primeiro para configurar foolype@gmail.com como admin:
+-- INSERT INTO user_permissions (user_id, is_admin, allowed_pracas)
+-- SELECT id, TRUE, ARRAY['Guarulhos', 'São Paulo', 'Campinas', 'Santos']
+-- FROM auth.users WHERE email = 'foolype@gmail.com'
+-- ON CONFLICT (user_id) DO UPDATE SET is_admin = TRUE, allowed_pracas = ARRAY['Guarulhos', 'São Paulo', 'Campinas', 'Santos'];
+
 -- 1. TABELA DE PERMISSÕES DE USUÁRIO
 -- Esta tabela armazena as permissões de cada usuário
 CREATE TABLE IF NOT EXISTS user_permissions (
@@ -32,10 +39,18 @@ CREATE POLICY "Users can view own permissions" ON user_permissions
 CREATE POLICY "Only admins can modify permissions" ON user_permissions
   FOR ALL USING (
     EXISTS (
-      SELECT 1 FROM user_permissions 
+      SELECT 1 FROM user_permissions
       WHERE user_id = auth.uid() AND is_admin = TRUE
     )
   );
+
+-- Política adicional: Permitir que usuários sem permissões definidas as criem
+CREATE POLICY "Users can insert own permissions" ON user_permissions
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Política adicional: Permitir que usuários atualizem suas próprias permissões
+CREATE POLICY "Users can update own permissions" ON user_permissions
+  FOR UPDATE USING (auth.uid() = user_id);
 
 -- 4. FUNÇÕES RPC PARA CONSULTAS OTIMIZADAS
 -- Estas funções permitem consultar dados com alta performance mesmo com +1M registros

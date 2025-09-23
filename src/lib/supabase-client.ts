@@ -3,9 +3,17 @@ import { createBrowserClient } from '@supabase/ssr'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dggswtzjozluleqlckdg.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRnZ3N3dHpqb3psdWxlcWxja2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1NzMzMjMsImV4cCI6MjA3NDE0OTMyM30.tSo7qK713vy5z5Kz1RFq61TlLK3Zj1Pqoz-RpRCE4q4'
 
-// Cliente para uso no browser (componentes client-side)
+// Singleton para evitar múltiplas instâncias
+let supabaseInstance: any = null
+
 export const createClient = () => {
-  return createBrowserClient(supabaseUrl, supabaseAnonKey)
+  if (!supabaseInstance) {
+    supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey)
+    console.log('Supabase client criado (singleton)')
+  } else {
+    console.log('Supabase client reutilizado (singleton)')
+  }
+  return supabaseInstance
 }
 
 // Tipos para os dados da empresa
