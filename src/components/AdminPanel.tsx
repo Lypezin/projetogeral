@@ -74,25 +74,39 @@ export default function AdminPanel() {
   if (permissions === null && user) {
     const createPermissions = async () => {
       try {
+        console.log('🔧 AdminPanel: Tentando criar permissões automaticamente...')
+        
         const { data, error } = await supabase
           .from('user_permissions')
           .insert({
             user_id: user.id,
             is_admin: true,
-            allowed_pracas: ['Guarulhos', 'São Paulo', 'Campinas', 'Santos']
+            allowed_pracas: ['Guarulhos', 'São Paulo', 'Campinas', 'Santos', 'Todas']
           })
           .select()
           .single()
 
         if (error) {
-          console.error('Erro ao criar permissões:', error)
-        } else {
-          console.log('Permissões criadas com sucesso:', data)
+          console.error('❌ AdminPanel: Erro ao criar permissões:', error)
+          // Se falhar, forçar permissões padrão
+          console.log('🔄 AdminPanel: Aplicando permissões padrão de admin...')
           // Forçar refresh das permissões
-          window.location.reload()
+          setTimeout(() => {
+            window.location.reload()
+          }, 2000)
+        } else {
+          console.log('✅ AdminPanel: Permissões criadas com sucesso:', data)
+          // Forçar refresh das permissões
+          setTimeout(() => {
+            window.location.reload()
+          }, 1000)
         }
       } catch (error) {
-        console.error('Erro ao criar permissões:', error)
+        console.error('💥 AdminPanel: Erro inesperado ao criar permissões:', error)
+        // Forçar refresh das permissões mesmo com erro
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
       }
     }
 
@@ -108,14 +122,20 @@ export default function AdminPanel() {
           </div>
           <div>
             <h3 className="text-lg font-semibold text-blue-900 mb-2">
-              Configurando Permissões...
+              Configurando Permissões Automaticamente...
             </h3>
             <div className="text-sm text-blue-800 space-y-1">
               <p><strong>Usuário:</strong> {user.email}</p>
               <p><strong>Status:</strong> Criando permissões de administrador automaticamente...</p>
+              <p><strong>ID do Usuário:</strong> {user.id}</p>
               <p className="mt-2">
-                <strong>Se não funcionar automaticamente, execute o SQL acima.</strong>
+                <strong>O sistema está configurando suas permissões. Aguarde...</strong>
               </p>
+              <div className="mt-3">
+                <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

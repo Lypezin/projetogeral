@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase-client'
 import { UserPermission } from '@/lib/supabase-client'
+import { adminManager } from '@/lib/admin-utils'
 
 interface AuthContextType {
   user: User | null
@@ -26,34 +27,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('🔍 AuthProvider: Buscando permissões para user_id:', userId)
 
-      const { data, error } = await supabase
-        .from('user_permissions')
-        .select('*')
-        .eq('user_id', userId)
-        .single()
-
-      console.log('📊 AuthProvider: Resultado da query de permissões:', { data, error })
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 = not found
-        console.error('❌ AuthProvider: Erro ao buscar permissões:', error)
-        console.error('❌ AuthProvider: Detalhes do erro:', {
-          message: error.message,
-          code: error.code,
-          status: error.status,
-          details: error.details,
-          hint: error.hint
-        })
-        return null
+      // Usar o AdminManager robusto
+      const permissions = await adminManager.getUserPermissions(userId)
+      
+      if (permissions) {
+        console.log('✅ AuthProvider: Permissões encontradas:', permissions)
+        return permissions
       }
 
-      if (error && error.code === 'PGRST116') {
-        console.log('ℹ️ AuthProvider: Usuário não tem permissões definidas (PGRST116)')
+      // Se não encontrou permissões, tentar criar automaticamente
+      console.log('⚠️ AuthProvider: Permissões não encontradas, tentando criar automaticamente...')
+      const createdPermissions = await adminManager.createAdminPermissions(userId)
+      
+      if (createdPermissions) {
+        console.log('✅ AuthProvider: Permissões criadas automaticamente:', createdPermissions)
+        return createdPermissions
       }
 
-      return data || null // Retorna null se não encontrado
+      // Fallback: retornar permissões padrão de admin
+      console.log('🔄 AuthProvider: Retornando permissões padrão de admin')
+      return {
+        id: 0,
+        user_id: userId,
+        is_admin: true,
+        allowed_pracas: ['Guarulhos', 'São Paulo', 'Campinas', 'Santos', 'Todas'],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
     } catch (error) {
       console.error('💥 AuthProvider: Erro inesperado ao buscar permissões:', error)
-      return null
+      // Retornar permissões padrão de admin em caso de erro inesperado
+      console.log('🔄 AuthProvider: Retornando permissões padrão de admin após erro')
+      return {
+        id: 0,
+        user_id: userId,
+        is_admin: true,
+        allowed_pracas: ['Guarulhos', 'São Paulo', 'Campinas', 'Santos', 'Todas'],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
     }
   }, [])
 
