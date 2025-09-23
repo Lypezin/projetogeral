@@ -24,20 +24,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserPermissions = useCallback(async (userId: string) => {
     try {
+      console.log('🔍 AuthProvider: Buscando permissões para user_id:', userId)
+
       const { data, error } = await supabase
         .from('user_permissions')
         .select('*')
         .eq('user_id', userId)
         .single()
 
+      console.log('📊 AuthProvider: Resultado da query de permissões:', { data, error })
+
       if (error && error.code !== 'PGRST116') { // PGRST116 = not found
-        console.error('Erro ao buscar permissões:', error)
+        console.error('❌ AuthProvider: Erro ao buscar permissões:', error)
+        console.error('❌ AuthProvider: Detalhes do erro:', {
+          message: error.message,
+          code: error.code,
+          status: error.status,
+          details: error.details,
+          hint: error.hint
+        })
         return null
+      }
+
+      if (error && error.code === 'PGRST116') {
+        console.log('ℹ️ AuthProvider: Usuário não tem permissões definidas (PGRST116)')
       }
 
       return data || null // Retorna null se não encontrado
     } catch (error) {
-      console.error('Erro ao buscar permissões:', error)
+      console.error('💥 AuthProvider: Erro inesperado ao buscar permissões:', error)
       return null
     }
   }, [])

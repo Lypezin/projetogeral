@@ -5,13 +5,17 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOi
 
 // Singleton para evitar múltiplas instâncias
 let supabaseInstance: any = null
+let instanceCount = 0
 
 export const createClient = () => {
+  instanceCount++
+  console.log(`🔄 Supabase createClient chamado (${instanceCount} vezes)`)
+
   if (!supabaseInstance) {
     supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey)
-    console.log('Supabase client criado (singleton)')
+    console.log('✅ Supabase client criado (singleton)')
   } else {
-    console.log('Supabase client reutilizado (singleton)')
+    console.log('♻️ Supabase client reutilizado (singleton)')
   }
   return supabaseInstance
 }

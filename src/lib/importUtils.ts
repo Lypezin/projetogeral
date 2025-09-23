@@ -1,5 +1,7 @@
 import * as XLSX from 'xlsx'
-import { supabase, DadosEmpresa } from './supabase'
+import { createClient, DadosEmpresa } from './supabase-client'
+
+const supabase = createClient()
 
 // Função para converter data serial do Excel para formato YYYY-MM-DD
 const parseExcelDate = (dateValue: any): string => {

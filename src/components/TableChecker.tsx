@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { Database, AlertCircle, CheckCircle, Trash2 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase-client'
 import { clearAllData } from '@/lib/importUtils'
 
 export default function TableChecker() {
