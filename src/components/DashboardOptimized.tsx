@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { TrendingUp, TrendingDown, Activity, CheckCircle, XCircle, Clock, BarChart3, RefreshCw, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/providers/auth-provider'
 import { dashboardAPI, DashboardStats, DataByPraca } from '@/lib/dashboard-api'
+import DashboardFilters, { DashboardFiltersType } from './DashboardFilters'
 
 interface MetricCardProps {
   title: string
@@ -17,21 +18,32 @@ interface MetricCardProps {
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon, color, bgColor, borderColor, percentage }) => (
-  <div className={`${bgColor} ${borderColor} border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow`}>
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm font-medium text-gray-600">{title}</p>
-        <p className={`text-3xl font-bold ${color} mt-2`}>
-          {value.toLocaleString()}
-        </p>
+  <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 relative overflow-hidden group">
+    {/* Background gradient on hover */}
+    <div className={`absolute inset-0 ${bgColor} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
+    
+    <div className="relative z-10">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`w-12 h-12 ${bgColor} ${color} rounded-xl flex items-center justify-center shadow-sm`}>
+          {icon}
+        </div>
         {percentage !== undefined && (
-          <p className="text-xs text-gray-500 mt-1">
-            {percentage.toFixed(1)}% do total
-          </p>
+          <div className="text-right">
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Taxa</div>
+            <div className={`text-lg font-bold ${color}`}>
+              {percentage.toFixed(1)}%
+            </div>
+          </div>
         )}
       </div>
-      <div className={`${color} opacity-80`}>
-        {icon}
+      
+      <div>
+        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">
+          {title}
+        </h3>
+        <p className="text-3xl font-bold text-gray-900">
+          {value.toLocaleString()}
+        </p>
       </div>
     </div>
   </div>
@@ -44,8 +56,14 @@ export default function DashboardOptimized() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [filters, setFilters] = useState<DashboardFiltersType>({
+    startDate: '',
+    endDate: '',
+    subPracas: [],
+    origens: []
+  })
 
-  const loadDashboardData = async (showRefreshing = false) => {
+  const loadDashboardData = useCallback(async (showRefreshing = false) => {
     try {
       if (showRefreshing) {
         setRefreshing(true)
@@ -54,10 +72,22 @@ export default function DashboardOptimized() {
       }
       setError(null)
 
-      // Carregar dados em paralelo
+      // Carregar dados em paralelo com filtros
       const [statsResult, pracaResult] = await Promise.all([
-        dashboardAPI.getDashboardStats(),
-        dashboardAPI.getDataByPraca()
+        dashboardAPI.getDashboardStats(
+          undefined, 
+          filters.startDate || undefined,
+          filters.endDate || undefined,
+          filters.subPracas.length > 0 ? filters.subPracas : undefined,
+          filters.origens.length > 0 ? filters.origens : undefined
+        ),
+        dashboardAPI.getDataByPraca(
+          undefined,
+          filters.startDate || undefined,
+          filters.endDate || undefined,
+          filters.subPracas.length > 0 ? filters.subPracas : undefined,
+          filters.origens.length > 0 ? filters.origens : undefined
+        )
       ])
 
       if (statsResult.error) {
@@ -78,13 +108,17 @@ export default function DashboardOptimized() {
       setLoading(false)
       setRefreshing(false)
     }
-  }
+  }, [filters])
 
   useEffect(() => {
     if (user) {
       loadDashboardData()
     }
-  }, [user])
+  }, [user, loadDashboardData])
+
+  const handleFiltersChange = useCallback((newFilters: DashboardFiltersType) => {
+    setFilters(newFilters)
+  }, [])
 
   const handleRefresh = () => {
     loadDashboardData(true)
@@ -189,39 +223,53 @@ export default function DashboardOptimized() {
   const totalOfertadas = stats.total_ofertadas
 
   return (
-    <div className="space-y-6">
-      {/* Header com refresh */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          {refreshing ? 'Atualizando...' : 'Atualizar'}
-        </button>
-      </div>
-
-      {/* Informações de permissão */}
-      {permissions && !permissions.is_admin && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <AlertTriangle className="w-5 h-5 text-amber-600 mr-2" />
-            <div>
-              <p className="text-sm font-medium text-amber-800">
-                Visualização limitada
-              </p>
-              <p className="text-sm text-amber-700">
-                Você está vendo dados apenas das praças: {permissions.allowed_pracas.join(', ')}
-              </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="space-y-8">
+        {/* Header moderno */}
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="px-6 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+                <p className="text-gray-600 mt-1">Insights em tempo real dos seus dados de entrega</p>
+              </div>
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:opacity-50 shadow-lg hover:shadow-xl"
+              >
+                <RefreshCw className={`w-5 h-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Atualizando...' : 'Atualizar Dados'}
+              </button>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Cards de métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="px-6 space-y-8">
+          {/* Filtros */}
+          <DashboardFilters onFiltersChange={handleFiltersChange} loading={loading || refreshing} />
+
+          {/* Informações de permissão */}
+          {permissions && !permissions.is_admin && (
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mr-4">
+                  <AlertTriangle className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-amber-800">
+                    Visualização Limitada
+                  </p>
+                  <p className="text-amber-700 mt-1">
+                    Dados limitados às praças: <span className="font-medium">{permissions.allowed_pracas.join(', ')}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Cards de métricas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <MetricCard
           title="Corridas Ofertadas"
           value={stats.total_ofertadas}
@@ -262,18 +310,24 @@ export default function DashboardOptimized() {
         />
       </div>
 
-      {/* Gráficos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Gráfico de barras por praça */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">
-              Dados por Praça (Top 10)
-            </h3>
-            <span className="text-sm text-gray-500">
-              {pracaData.length} praças total
-            </span>
-          </div>
+          {/* Gráficos */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            {/* Gráfico de barras por praça */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Performance por Praça
+                  </h3>
+                  <p className="text-gray-600 text-sm mt-1">Top 10 praças com mais movimento</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">Total</span>
+                  <div className="text-lg font-bold text-gray-900">
+                    {pracaData.length} praças
+                  </div>
+                </div>
+              </div>
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
@@ -300,11 +354,14 @@ export default function DashboardOptimized() {
           )}
         </div>
 
-        {/* Gráfico de pizza */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Distribuição de Status
-          </h3>
+            {/* Gráfico de pizza */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-gray-900">
+                  Distribuição de Status
+                </h3>
+                <p className="text-gray-600 text-sm mt-1">Proporção de corridas por status</p>
+              </div>
           {pieData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -331,25 +388,37 @@ export default function DashboardOptimized() {
         </div>
       </div>
 
-      {/* Informações adicionais */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Resumo dos Dados</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-          <div>
-            <p className="text-gray-600">Total de Registros:</p>
-            <p className="font-semibold text-gray-800">{stats.total_records.toLocaleString()}</p>
-          </div>
-          <div>
-            <p className="text-gray-600">Período dos Dados:</p>
-            <p className="font-semibold text-gray-800">
-              {stats.data_range.start_date} até {stats.data_range.end_date}
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-600">Valor Total (Taxas):</p>
-            <p className="font-semibold text-gray-800">
-              R$ {stats.total_taxas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </p>
+          {/* Informações adicionais */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            <h3 className="text-xl font-bold text-gray-900 mb-6">Resumo Geral</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <BarChart3 className="w-8 h-8 text-blue-600" />
+                </div>
+                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Total de Registros</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.total_records.toLocaleString()}</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Clock className="w-8 h-8 text-green-600" />
+                </div>
+                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Período dos Dados</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {stats.data_range.start_date}
+                </p>
+                <p className="text-sm text-gray-600">até {stats.data_range.end_date}</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <TrendingUp className="w-8 h-8 text-purple-600" />
+                </div>
+                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Valor Total (Taxas)</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  R$ {stats.total_taxas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

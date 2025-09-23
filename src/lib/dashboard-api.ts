@@ -43,17 +43,23 @@ export class DashboardAPI {
    * @param userId ID do usuário (opcional, usa o atual se não especificado)
    * @param startDate Data inicial (opcional)
    * @param endDate Data final (opcional)
+   * @param subPracas Sub-praças filtradas (opcional)
+   * @param origens Origens filtradas (opcional)
    */
   async getDashboardStats(
     userId?: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    subPracas?: string[],
+    origens?: string[]
   ): Promise<{ data: DashboardStats | null; error: any }> {
     try {
       const { data, error } = await this.supabase.rpc('get_dashboard_stats', {
         user_id_param: userId || null,
         start_date: startDate || null,
-        end_date: endDate || null
+        end_date: endDate || null,
+        sub_pracas: subPracas && subPracas.length > 0 ? subPracas : null,
+        origens: origens && origens.length > 0 ? origens : null
       })
 
       if (error) {
@@ -78,17 +84,23 @@ export class DashboardAPI {
    * @param userId ID do usuário (opcional, usa o atual se não especificado)
    * @param startDate Data inicial (opcional)
    * @param endDate Data final (opcional)
+   * @param subPracas Sub-praças filtradas (opcional)
+   * @param origens Origens filtradas (opcional)
    */
   async getDataByPraca(
     userId?: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    subPracas?: string[],
+    origens?: string[]
   ): Promise<{ data: DataByPraca[] | null; error: any }> {
     try {
       const { data, error } = await this.supabase.rpc('get_data_by_praca', {
         user_id_param: userId || null,
         start_date: startDate || null,
-        end_date: endDate || null
+        end_date: endDate || null,
+        sub_pracas: subPracas && subPracas.length > 0 ? subPracas : null,
+        origens: origens && origens.length > 0 ? origens : null
       })
 
       if (error) {

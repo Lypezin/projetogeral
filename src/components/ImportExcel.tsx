@@ -86,19 +86,24 @@ export default function ImportExcel({ onImportComplete }: ImportExcelProps) {
   })
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-        <FileSpreadsheet className="mr-2 text-primary-600" />
-        Importar Dados Excel
-      </h2>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3">
+            <FileSpreadsheet className="w-6 h-6 text-blue-600" />
+          </div>
+          Importar Dados
+        </h2>
+        <p className="text-gray-600">Faça upload do seu arquivo Excel para análise</p>
+      </div>
 
       <div
         {...getRootProps()}
         className={`
-          border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all
+          border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-200
           ${isDragActive 
-            ? 'border-primary-500 bg-primary-50' 
-            : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
+            ? 'border-blue-500 bg-blue-50' 
+            : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
           }
           ${isProcessing ? 'cursor-not-allowed opacity-50' : ''}
         `}
@@ -106,30 +111,40 @@ export default function ImportExcel({ onImportComplete }: ImportExcelProps) {
         <input {...getInputProps()} />
         
         {isProcessing ? (
-          <div className="space-y-4">
-            <Loader2 className="mx-auto h-12 w-12 text-primary-600 animate-spin" />
+          <div className="space-y-6">
+            <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto">
+              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            </div>
             <div>
-              <p className="text-lg font-medium text-gray-700">
-                Processando: {currentFile}
+              <p className="text-xl font-semibold text-gray-900 mb-2">
+                Processando
               </p>
-              <div className="mt-2 bg-gray-200 rounded-full h-2">
+              <p className="text-gray-600 mb-4">
+                {currentFile}
+              </p>
+              <div className="mt-4 bg-gray-200 rounded-full h-3 max-w-md mx-auto">
                 <div 
-                  className="bg-primary-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 h-3 rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="text-sm text-gray-500 mt-1">{progress}% concluído</p>
+              <p className="text-sm font-medium text-gray-700 mt-3">{progress}% concluído</p>
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            <Upload className="mx-auto h-12 w-12 text-gray-400" />
+          <div className="space-y-6">
+            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto">
+              <Upload className="w-8 h-8 text-gray-400" />
+            </div>
             <div>
-              <p className="text-lg font-medium text-gray-700">
-                {isDragActive ? 'Solte o arquivo aqui...' : 'Arraste um arquivo Excel ou clique para selecionar'}
+              <p className="text-xl font-semibold text-gray-900 mb-2">
+                {isDragActive ? 'Solte o arquivo aqui' : 'Faça upload do arquivo'}
               </p>
-              <p className="text-sm text-gray-500">
-                Suporta arquivos .xlsx e .xls até 1M+ de linhas
+              <p className="text-gray-600">
+                Arraste e solte ou clique para selecionar
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Formatos: .xlsx, .xls
               </p>
             </div>
           </div>
@@ -137,50 +152,59 @@ export default function ImportExcel({ onImportComplete }: ImportExcelProps) {
       </div>
 
       {importStats && (
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-              <span className="text-sm font-medium text-green-800">Sucesso</span>
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-6">
+            <div className="flex items-center mb-3">
+              <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-3">
+                <CheckCircle className="w-6 h-6 text-green-600" />
+              </div>
+              <span className="text-sm font-semibold text-green-800 uppercase tracking-wide">Sucesso</span>
             </div>
-            <p className="text-2xl font-bold text-green-600 mt-1">
+            <p className="text-3xl font-bold text-green-700">
               {importStats.success.toLocaleString()}
             </p>
           </div>
 
           {importStats.errors > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-                <span className="text-sm font-medium text-red-800">Erros</span>
+            <div className="bg-gradient-to-br from-red-50 to-rose-50 border border-red-200 rounded-2xl p-6">
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center mr-3">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <span className="text-sm font-semibold text-red-800 uppercase tracking-wide">Erros</span>
               </div>
-              <p className="text-2xl font-bold text-red-600 mt-1">
+              <p className="text-3xl font-bold text-red-700">
                 {importStats.errors.toLocaleString()}
               </p>
             </div>
           )}
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <FileSpreadsheet className="h-5 w-5 text-blue-600 mr-2" />
-              <span className="text-sm font-medium text-blue-800">Total</span>
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6">
+            <div className="flex items-center mb-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3">
+                <FileSpreadsheet className="w-6 h-6 text-blue-600" />
+              </div>
+              <span className="text-sm font-semibold text-blue-800 uppercase tracking-wide">Total</span>
             </div>
-            <p className="text-2xl font-bold text-blue-600 mt-1">
+            <p className="text-3xl font-bold text-blue-700">
               {importStats.total.toLocaleString()}
             </p>
           </div>
         </div>
       )}
 
-      <div className="mt-4 text-sm text-gray-600">
-        <p><strong>Colunas esperadas:</strong></p>
-        <div className="mt-2 text-xs bg-gray-50 p-3 rounded">
-          data_do_periodo, periodo, duracao_do_periodo, numero_minimo_de_entregadores_regulares_na_escala, 
-          tag, id_da_pessoa_entregadora, pessoa_entregadora, praca, sub_praca, origem, 
-          tempo_disponivel_escalado, tempo_disponivel_absoluto, numero_de_corridas_ofertadas, 
-          numero_de_corridas_aceitas, numero_de_corridas_rejeitadas, numero_de_corridas_completadas, 
-          numero_de_corridas_canceladas_pela_pessoa_entregadora, numero_de_pedidos_aceitos_e_concluidos, 
-          soma_das_taxas_das_corridas_aceitas
+      <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl">
+        <div className="flex items-start">
+          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
+            <AlertCircle className="w-6 h-6 text-blue-600" />
+          </div>
+          <div className="text-blue-900">
+            <p className="font-semibold text-lg mb-2">Formato do Arquivo</p>
+            <p className="text-blue-800">
+              Certifique-se de que seu arquivo Excel contém as colunas padrão do sistema de dados de entrega.
+              O sistema detectará automaticamente as colunas corretas.
+            </p>
+          </div>
         </div>
       </div>
     </div>

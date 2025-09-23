@@ -44,7 +44,9 @@ CREATE POLICY "Only admins can modify permissions" ON user_permissions
 CREATE OR REPLACE FUNCTION get_dashboard_stats(
   user_id_param UUID DEFAULT NULL,
   start_date DATE DEFAULT NULL,
-  end_date DATE DEFAULT NULL
+  end_date DATE DEFAULT NULL,
+  sub_pracas TEXT[] DEFAULT NULL,
+  origens TEXT[] DEFAULT NULL
 )
 RETURNS JSON AS $$
 DECLARE
@@ -79,6 +81,10 @@ BEGIN
       -- Filtro de data
       (start_date IS NULL OR data_do_periodo::DATE >= start_date) AND
       (end_date IS NULL OR data_do_periodo::DATE <= end_date) AND
+      -- Filtro de sub-praças
+      (sub_pracas IS NULL OR array_length(sub_pracas, 1) = 0 OR sub_praca = ANY(sub_pracas)) AND
+      -- Filtro de origens
+      (origens IS NULL OR array_length(origens, 1) = 0 OR origem = ANY(origens)) AND
       -- Filtro de permissões
       (
         COALESCE(is_user_admin, FALSE) = TRUE OR 
@@ -115,7 +121,9 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION get_data_by_praca(
   user_id_param UUID DEFAULT NULL,
   start_date DATE DEFAULT NULL,
-  end_date DATE DEFAULT NULL
+  end_date DATE DEFAULT NULL,
+  sub_pracas TEXT[] DEFAULT NULL,
+  origens TEXT[] DEFAULT NULL
 )
 RETURNS JSON AS $$
 DECLARE
@@ -148,6 +156,8 @@ BEGIN
     WHERE 
       (start_date IS NULL OR data_do_periodo::DATE >= start_date) AND
       (end_date IS NULL OR data_do_periodo::DATE <= end_date) AND
+      (sub_pracas IS NULL OR array_length(sub_pracas, 1) = 0 OR sub_praca = ANY(sub_pracas)) AND
+      (origens IS NULL OR array_length(origens, 1) = 0 OR origem = ANY(origens)) AND
       (
         COALESCE(is_user_admin, FALSE) = TRUE OR 
         (user_pracas IS NOT NULL AND praca = ANY(user_pracas))

@@ -50,32 +50,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    // Verificar usuário atual
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
-      if (user) {
-        fetchUserPermissions(user.id).then(setPermissions)
-      }
-      setLoading(false)
-    })
+    let mounted = true
 
-    // Escutar mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null)
+    // Verificar usuário atual
+    const getInitialUser = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
         
-        if (session?.user) {
-          const userPermissions = await fetchUserPermissions(session.user.id)
-          setPermissions(userPermissions)
+        if (!mounted) return
+        
+        if (error) {
+          console.error('Erro ao verificar usuário:', error)
+          setUser(null)
+          setPermissions(null)
+          setLoading(false)
+          return
+        }
+
+        setUser(user)
+        
+        if (user) {
+          const userPermissions = await fetchUserPermissions(user.id)
+          if (mounted) {
+            setPermissions(userPermissions)
+          }
         } else {
           setPermissions(null)
         }
         
-        setLoading(false)
+        if (mounted) {
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error('Erro inesperado ao verificar usuário:', error)
+        if (mounted) {
+          setUser(null)
+          setPermissions(null)
+          setLoading(false)
+        }
+      }
+    }
+
+    getInitialUser()
+
+    // Escutar mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return
+
+        console.log('Auth state changed:', event, session?.user?.email)
+        
+        setUser(session?.user ?? null)
+        
+        if (session?.user) {
+          const userPermissions = await fetchUserPermissions(session.user.id)
+          if (mounted) {
+            setPermissions(userPermissions)
+          }
+        } else {
+          if (mounted) {
+            setPermissions(null)
+          }
+        }
+        
+        if (mounted) {
+          setLoading(false)
+        }
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signIn = async (email: string, password: string) => {
