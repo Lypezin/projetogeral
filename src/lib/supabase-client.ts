@@ -1,10 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dggswtzjozluleqlckdg.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRnZ3N3dHpqb3psdWxlcWxja2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1NzMzMjMsImV4cCI6MjA3NDE0OTMyM30.tSo7qK713vy5z5Kz1RFq61TlLK3Zj1Pqoz-RpRCE4q4'
 
-// Cliente legacy para compatibilidade com código existente
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Cliente para uso no browser (componentes client-side)
+export const createClient = () => {
+  return createBrowserClient(supabaseUrl, supabaseAnonKey)
+}
 
 // Tipos para os dados da empresa
 export interface DadosEmpresa {
@@ -29,4 +31,14 @@ export interface DadosEmpresa {
   numero_de_pedidos_aceitos_e_concluidos: number
   soma_das_taxas_das_corridas_aceitas: number
   created_at?: string
+}
+
+// Tipos para permissões de usuário
+export interface UserPermission {
+  id?: number
+  user_id: string
+  allowed_pracas: string[] // Array de praças que o usuário pode acessar
+  is_admin: boolean
+  created_at?: string
+  updated_at?: string
 }
