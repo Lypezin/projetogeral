@@ -83,19 +83,19 @@ END $$;
 -- 6. Criar/atualizar permissões se necessário
 DO $$
 DECLARE
-    user_id UUID;
+    target_user_id UUID;
     permission_exists BOOLEAN;
 BEGIN
     -- Obter o ID do usuário
-    SELECT id INTO user_id FROM auth.users WHERE email = 'foolype@gmail.com';
+    SELECT id INTO target_user_id FROM auth.users WHERE email = 'foolype@gmail.com';
     
-    IF user_id IS NULL THEN
+    IF target_user_id IS NULL THEN
         RAISE EXCEPTION 'Usuário foolype@gmail.com não encontrado';
     END IF;
     
     -- Verificar se já existe permissão
     SELECT EXISTS(
-        SELECT 1 FROM user_permissions WHERE user_id = user_id
+        SELECT 1 FROM user_permissions WHERE user_id = target_user_id
     ) INTO permission_exists;
     
     IF permission_exists THEN
@@ -105,21 +105,21 @@ BEGIN
             is_admin = TRUE,
             allowed_pracas = ARRAY['Guarulhos', 'São Paulo', 'Campinas', 'Santos'],
             updated_at = NOW()
-        WHERE user_id = user_id;
+        WHERE user_id = target_user_id;
         
-        RAISE NOTICE '✅ Permissão atualizada para user_id: %', user_id;
+        RAISE NOTICE '✅ Permissão atualizada para user_id: %', target_user_id;
     ELSE
         -- Criar nova permissão
         INSERT INTO user_permissions (user_id, is_admin, allowed_pracas, created_at, updated_at)
         VALUES (
-            user_id,
+            target_user_id,
             TRUE,
             ARRAY['Guarulhos', 'São Paulo', 'Campinas', 'Santos'],
             NOW(),
             NOW()
         );
         
-        RAISE NOTICE '✅ Nova permissão criada para user_id: %', user_id;
+        RAISE NOTICE '✅ Nova permissão criada para user_id: %', target_user_id;
     END IF;
 END $$;
 
