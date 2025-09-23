@@ -169,13 +169,13 @@ export default function AdminPanel() {
 
       // Combinar dados
       const usersWithPermissions = authUsers.users
-        .filter(authUser => authUser.email) // Filtrar usuários sem email
+        .filter((authUser: any) => authUser.email) // Filtrar usuários sem email
         .map((authUser: any) => ({
           id: authUser.id,
           email: authUser.email!,
           created_at: authUser.created_at,
           last_sign_in_at: authUser.last_sign_in_at,
-          permissions: permissionsData?.find(p => p.user_id === authUser.id)
+          permissions: permissionsData?.find((p: any) => p.user_id === authUser.id)
         }))
 
       setUsers(usersWithPermissions)
@@ -198,7 +198,7 @@ export default function AdminPanel() {
         return
       }
 
-      const uniquePracas = Array.from(new Set(data.map((item: any) => item.praca))).sort()
+      const uniquePracas = Array.from(new Set(data.map((item: any) => item.praca))).sort() as string[]
       setAvailablePracas(uniquePracas)
     } catch (error) {
       console.error('Erro ao carregar praças:', error)
@@ -268,7 +268,7 @@ export default function AdminPanel() {
   const togglePraca = (praca: string) => {
     const currentPracas = editForm.allowed_pracas
     const newPracas = currentPracas.includes(praca)
-      ? currentPracas.filter(p => p !== praca)
+      ? currentPracas.filter((p: string) => p !== praca)
       : [...currentPracas, praca]
     
     setEditForm({ ...editForm, allowed_pracas: newPracas })

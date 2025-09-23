@@ -67,8 +67,8 @@ export default function DashboardFilters({ onFiltersChange, loading }: Dashboard
       }
 
       // Extrair valores únicos
-      const subPracas = Array.from(new Set(data.map(item => item.sub_praca))).sort()
-      const origens = Array.from(new Set(data.map(item => item.origem))).sort()
+      const subPracas = Array.from(new Set(data.map((item: any) => item.sub_praca))).sort() as string[]
+      const origens = Array.from(new Set(data.map((item: any) => item.origem))).sort() as string[]
 
       setAvailableSubPracas(subPracas)
       setAvailableOrigens(origens)

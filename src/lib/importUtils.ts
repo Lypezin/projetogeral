@@ -453,7 +453,7 @@ export const getDataStats = async () => {
       totalRegistros: data.length
     }
     
-    data.forEach(row => {
+    data.forEach((row: any) => {
       stats.totalOfertadas += row.numero_de_corridas_ofertadas || 0
       stats.totalAceitas += row.numero_de_corridas_aceitas || 0
       stats.totalRejeitadas += row.numero_de_corridas_rejeitadas || 0
