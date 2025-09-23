@@ -63,7 +63,13 @@ export default function DashboardOptimized() {
     origens: []
   })
 
-  const loadDashboardData = useCallback(async (showRefreshing = false, currentFilters?: DashboardFiltersType) => {
+  // Filtros temporariamente desativados
+  const handleFiltersChange = useCallback((newFilters: DashboardFiltersType) => {
+    console.log('Filtros mudaram, mas estão desativados temporariamente:', newFilters)
+    setFilters(newFilters)
+  }, [])
+
+  const loadDashboardData = useCallback(async (showRefreshing = false) => {
     try {
       if (showRefreshing) {
         setRefreshing(true)
@@ -72,25 +78,10 @@ export default function DashboardOptimized() {
       }
       setError(null)
 
-      // Usar filtros atuais ou os passados como parâmetro
-      const activeFilters = currentFilters || filters
-
-      // Carregar dados em paralelo com filtros
+      // Carregar dados em paralelo SEM filtros para evitar loops
       const [statsResult, pracaResult] = await Promise.all([
-        dashboardAPI.getDashboardStats(
-          undefined,
-          activeFilters.startDate || undefined,
-          activeFilters.endDate || undefined,
-          activeFilters.subPracas.length > 0 ? activeFilters.subPracas : undefined,
-          activeFilters.origens.length > 0 ? activeFilters.origens : undefined
-        ),
-        dashboardAPI.getDataByPraca(
-          undefined,
-          activeFilters.startDate || undefined,
-          activeFilters.endDate || undefined,
-          activeFilters.subPracas.length > 0 ? activeFilters.subPracas : undefined,
-          activeFilters.origens.length > 0 ? activeFilters.origens : undefined
-        )
+        dashboardAPI.getDashboardStats(),
+        dashboardAPI.getDataByPraca()
       ])
 
       if (statsResult.error) {
@@ -111,29 +102,21 @@ export default function DashboardOptimized() {
       setLoading(false)
       setRefreshing(false)
     }
-  }, []) // Removido filters da dependência
+  }, []) // Sem dependências
 
-  // Carregar dados quando o usuário muda
+  // Carregar dados apenas quando o usuário muda
   useEffect(() => {
     if (user) {
       loadDashboardData()
+    } else {
+      // Reset states quando não há usuário
+      setStats(null)
+      setPracaData([])
+      setError(null)
     }
-  }, [user, loadDashboardData])
+  }, [user]) // Removido loadDashboardData completamente
 
-  // Carregar dados quando filtros mudam (com debounce)
-  useEffect(() => {
-    if (user && filters) {
-      const timeoutId = setTimeout(() => {
-        loadDashboardData(false, filters)
-      }, 500) // Debounce de 500ms
-
-      return () => clearTimeout(timeoutId)
-    }
-  }, [filters, user, loadDashboardData])
-
-  const handleFiltersChange = useCallback((newFilters: DashboardFiltersType) => {
-    setFilters(newFilters)
-  }, [])
+  // Filtros desativados temporariamente para resolver loop
 
   const handleRefresh = () => {
     loadDashboardData(true)
@@ -261,8 +244,8 @@ export default function DashboardOptimized() {
         </div>
 
         <div className="px-6 space-y-8">
-          {/* Filtros */}
-          <DashboardFilters onFiltersChange={handleFiltersChange} loading={loading || refreshing} />
+      {/* Filtros temporariamente desativados para resolver loop */}
+      {/* <DashboardFilters onFiltersChange={handleFiltersChange} loading={loading || refreshing} /> */}
 
           {/* Informações de permissão */}
           {permissions && !permissions.is_admin && (

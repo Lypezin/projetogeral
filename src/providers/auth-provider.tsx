@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase-client'
 import { UserPermission } from '@/lib/supabase-client'
@@ -20,9 +20,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [permissions, setPermissions] = useState<UserPermission | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isInitialized, setIsInitialized] = useState(false)
   const supabase = createClient()
 
-  const fetchUserPermissions = async (userId: string) => {
+  const fetchUserPermissions = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('user_permissions')
@@ -35,40 +36,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null
       }
 
-      return data
+      return data || null // Retorna null se não encontrado
     } catch (error) {
       console.error('Erro ao buscar permissões:', error)
       return null
     }
-  }
+  }, [])
 
-  const refreshPermissions = async () => {
+  const refreshPermissions = useCallback(async () => {
     if (user) {
       const userPermissions = await fetchUserPermissions(user.id)
       setPermissions(userPermissions)
+    } else {
+      setPermissions(null)
     }
-  }
+  }, [user, fetchUserPermissions])
 
   useEffect(() => {
     let mounted = true
 
-    // Verificar usuário atual
+    // Verificar usuário atual apenas uma vez
     const getInitialUser = async () => {
       try {
         const { data: { user }, error } = await supabase.auth.getUser()
-        
+
         if (!mounted) return
-        
+
         if (error) {
           console.error('Erro ao verificar usuário:', error)
           setUser(null)
           setPermissions(null)
           setLoading(false)
+          setIsInitialized(true)
           return
         }
 
         setUser(user)
-        
+
         if (user) {
           const userPermissions = await fetchUserPermissions(user.id)
           if (mounted) {
@@ -77,9 +81,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setPermissions(null)
         }
-        
+
         if (mounted) {
           setLoading(false)
+          setIsInitialized(true)
         }
       } catch (error) {
         console.error('Erro inesperado ao verificar usuário:', error)
@@ -87,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null)
           setPermissions(null)
           setLoading(false)
+          setIsInitialized(true)
         }
       }
     }
@@ -99,9 +105,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return
 
         console.log('Auth state changed:', event, session?.user?.email)
-        
+
         setUser(session?.user ?? null)
-        
+
         if (session?.user) {
           const userPermissions = await fetchUserPermissions(session.user.id)
           if (mounted) {
@@ -112,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setPermissions(null)
           }
         }
-        
+
         if (mounted) {
           setLoading(false)
         }
@@ -123,19 +129,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [])
+  }, [fetchUserPermissions]) // Adicionado fetchUserPermissions como dependência
 
-  const signIn = async (email: string, password: string) => {
+  // Atualizar permissões quando isInitialized mudar
+  useEffect(() => {
+    if (isInitialized) {
+      refreshPermissions()
+    }
+  }, [isInitialized, refreshPermissions])
+
+  const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
     return { error }
-  }
+  }, [])
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut()
-  }
+  }, [])
 
   const value = {
     user,
