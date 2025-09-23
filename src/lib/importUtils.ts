@@ -110,6 +110,8 @@ export const importDataInBatches = async (
     const batch = data.slice(i, i + BATCH_SIZE)
     
     try {
+      console.log(`📦 Inserindo lote ${Math.floor(i/BATCH_SIZE) + 1} com ${batch.length} registros na tabela delivery_data...`)
+      
       const { error } = await supabase
         .from('delivery_data')
         .insert(batch)
@@ -117,9 +119,10 @@ export const importDataInBatches = async (
       if (error) {
         errors += batch.length
         errorDetails.push(`Lote ${Math.floor(i/BATCH_SIZE) + 1}: ${error.message}`)
-        console.error('Erro no lote:', error)
+        console.error('❌ Erro no lote:', error)
       } else {
         success += batch.length
+        console.log(`✅ Lote ${Math.floor(i/BATCH_SIZE) + 1} inserido com sucesso!`)
       }
     } catch (error) {
       errors += batch.length
@@ -165,12 +168,8 @@ export const checkTable = async () => {
 // Função para obter estatísticas dos dados
 export const getDataStats = async () => {
   try {
-    // Primeiro verifica se a tabela existe
-    const tableCheck = await checkTable()
-    if (!tableCheck.exists) {
-      throw new Error(`Tabela 'delivery_data' não encontrada: ${tableCheck.error}`)
-    }
-
+    console.log('🔍 Tentando obter estatísticas da tabela delivery_data...')
+    
     const { data, error } = await supabase
       .from('delivery_data')
       .select(`
@@ -180,7 +179,23 @@ export const getDataStats = async () => {
         numero_de_corridas_completadas
       `)
     
-    if (error) throw error
+    if (error) {
+      console.error('❌ Erro ao consultar delivery_data:', error)
+      throw error
+    }
+    
+    if (!data || data.length === 0) {
+      console.log('📝 Tabela delivery_data existe mas está vazia')
+      return {
+        totalOfertadas: 0,
+        totalAceitas: 0,
+        totalRejeitadas: 0,
+        totalCompletadas: 0,
+        totalRegistros: 0
+      }
+    }
+    
+    console.log(`✅ Encontrados ${data.length} registros na tabela delivery_data`)
     
     const stats = {
       totalOfertadas: 0,
@@ -199,7 +214,7 @@ export const getDataStats = async () => {
     
     return stats
   } catch (error) {
-    console.error('Erro ao obter estatísticas:', error)
+    console.error('❌ Erro ao obter estatísticas:', error)
     throw error
   }
 }
