@@ -45,6 +45,9 @@ const parseTime = (timeStr: any): string => {
   
   // Se é um número (Excel pode converter para número decimal)
   if (typeof timeStr === 'number') {
+    // Se o número é 0 ou muito pequeno, retorna padrão
+    if (timeStr === 0) return '00:00:00'
+    
     const totalSeconds = Math.round(timeStr * 24 * 60 * 60)
     const hours = Math.floor(totalSeconds / 3600)
     const minutes = Math.floor((totalSeconds % 3600) / 60)
@@ -56,15 +59,25 @@ const parseTime = (timeStr: any): string => {
   const timeString = timeStr.toString().trim()
   
   // Se está vazio após conversão, retorna padrão
-  if (!timeString || timeString === '') return '00:00:00'
+  if (!timeString || timeString === '' || timeString === 'null' || timeString === 'undefined') {
+    return '00:00:00'
+  }
   
   // Se já está no formato correto, retorna
   if (timeString.includes(':')) {
-    return timeString
+    // Valida se o formato está correto (HH:MM ou HH:MM:SS)
+    if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(timeString)) {
+      // Se é HH:MM, adiciona :00
+      if (timeString.split(':').length === 2) {
+        return timeString + ':00'
+      }
+      return timeString
+    }
   }
   
-  // Se chegou aqui, tenta converter de volta para string
-  return timeString
+  // Se chegou aqui e não é reconhecido, retorna padrão
+  console.log(`⚠️ Valor de tempo não reconhecido: "${timeString}", usando 00:00:00`)
+  return '00:00:00'
 }
 
 // Função para validar e converter linha do Excel
@@ -101,6 +114,14 @@ const validateAndConvertRow = (row: any): DadosEmpresa | null => {
     // Log para debugging da conversão de data
     if (typeof row.data_do_periodo === 'number') {
       console.log(`📅 Data convertida: ${row.data_do_periodo} → ${convertedRow.data_do_periodo}`)
+    }
+    
+    // Log para debugging de campos de tempo problemáticos
+    if (!row.duracao_do_periodo || row.duracao_do_periodo === '') {
+      console.log(`⚠️ duracao_do_periodo vazio, usando: ${convertedRow.duracao_do_periodo}`)
+    }
+    if (!row.tempo_disponivel_absoluto || row.tempo_disponivel_absoluto === '') {
+      console.log(`⚠️ tempo_disponivel_absoluto vazio, usando: ${convertedRow.tempo_disponivel_absoluto}`)
     }
     
     console.log('✅ Linha convertida com sucesso')
