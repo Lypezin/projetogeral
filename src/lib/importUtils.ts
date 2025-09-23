@@ -101,6 +101,13 @@ const safeToString = (value: any): string => {
   return value.toString().trim()
 }
 
+// Função específica para campos que podem ser INTERVAL no PostgreSQL
+const safeToStringNotEmpty = (value: any): string => {
+  if (!value || value === null || value === undefined || value === '') return '00:00:00'
+  const str = value.toString().trim()
+  return str === '' ? '00:00:00' : str
+}
+
 // Função para validar e converter linha do Excel
 const validateAndConvertRow = (row: any): DadosEmpresa | null => {
   try {
@@ -124,7 +131,7 @@ const validateAndConvertRow = (row: any): DadosEmpresa | null => {
       praca: safeToString(row.praca),
       sub_praca: safeToString(row.sub_praca),
       origem: safeToString(row.origem),
-      tempo_disponivel_escalado: safeToString(row.tempo_disponivel_escalado),
+      tempo_disponivel_escalado: parseTime(row.tempo_disponivel_escalado),
       tempo_disponivel_absoluto: parseTime(row.tempo_disponivel_absoluto),
       numero_de_corridas_ofertadas: safeParseInt(row.numero_de_corridas_ofertadas),
       numero_de_corridas_aceitas: safeParseInt(row.numero_de_corridas_aceitas),
@@ -241,6 +248,22 @@ export const importDataInBatches = async (
               batchErrors++
               console.error(`❌ Erro no registro ${j + 1}:`, singleError.message)
               console.error(`❌ Dados problemáticos:`, validBatch[j])
+              
+              // Debug específico para erros de interval
+              if (singleError.message.includes('interval')) {
+                console.error(`🔍 Debug INTERVAL - Checando campos de tempo:`)
+                console.error(`  - duracao_do_periodo: "${validBatch[j].duracao_do_periodo}"`)
+                console.error(`  - tempo_disponivel_absoluto: "${validBatch[j].tempo_disponivel_absoluto}"`)
+                console.error(`  - tempo_disponivel_escalado: "${validBatch[j].tempo_disponivel_escalado}"`)
+                
+                // Verifica todos os campos que podem ser interval
+                Object.keys(validBatch[j]).forEach(key => {
+                  const value = (validBatch[j] as any)[key]
+                  if (value === '' || value === null || value === undefined) {
+                    console.error(`  ⚠️ Campo vazio detectado: ${key} = "${value}"`)
+                  }
+                })
+              }
             } else {
               batchSuccess++
             }
