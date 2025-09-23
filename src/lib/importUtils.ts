@@ -355,10 +355,24 @@ export const clearAllData = async () => {
   try {
     console.log('🗑️ Iniciando limpeza de todos os dados...')
     
+    // Primeiro, vamos verificar quantos registros existem
+    const { count } = await supabase
+      .from('delivery_data')
+      .select('*', { count: 'exact', head: true })
+    
+    console.log(`📊 Encontrados ${count} registros para deletar`)
+    
+    if (count === 0) {
+      console.log('✅ Banco já está vazio!')
+      return { success: true, message: 'Banco já estava vazio' }
+    }
+    
+    // Deleta todos os registros usando uma condição que sempre é verdadeira
+    // Usamos created_at ou qualquer campo que sempre existe
     const { error } = await supabase
       .from('delivery_data')
       .delete()
-      .neq('id', 0) // Deleta todos os registros (neq 0 significa "not equal to 0", que pega tudo)
+      .not('data_do_periodo', 'is', null) // Remove todos que têm data_do_periodo (ou seja, todos)
     
     if (error) {
       console.error('❌ Erro ao limpar dados:', error)
@@ -366,7 +380,7 @@ export const clearAllData = async () => {
     }
     
     console.log('✅ Todos os dados foram removidos com sucesso!')
-    return { success: true }
+    return { success: true, message: `${count} registros removidos com sucesso` }
     
   } catch (error) {
     console.error('❌ Erro na limpeza:', error)
