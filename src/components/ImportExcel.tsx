@@ -94,7 +94,7 @@ export default function ImportExcel({ onImportComplete }: ImportExcelProps) {
           </div>
           Importar Dados
         </h2>
-        <p className="text-gray-600">Faça upload do seu arquivo Excel para análise</p>
+        <p className="text-gray-600">Upload de arquivo Excel</p>
       </div>
 
       <div
@@ -138,7 +138,7 @@ export default function ImportExcel({ onImportComplete }: ImportExcelProps) {
             </div>
             <div>
               <p className="text-xl font-semibold text-gray-900 mb-2">
-                {isDragActive ? 'Solte o arquivo aqui' : 'Faça upload do arquivo'}
+                {isDragActive ? 'Solte o arquivo aqui' : 'Upload de arquivo'}
               </p>
               <p className="text-gray-600">
                 Arraste e solte ou clique para selecionar

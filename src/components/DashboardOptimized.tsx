@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, Activity, CheckCircle, XCircle, Clock, BarCha
 import { useAuth } from '@/providers/auth-provider'
 import { dashboardAPI, DashboardStats, DataByPraca } from '@/lib/dashboard-api'
 import DashboardFilters, { DashboardFiltersType } from './DashboardFilters'
+import DateFilter from './DateFilter'
 
 interface MetricCardProps {
   title: string
@@ -62,10 +63,38 @@ export default function DashboardOptimized() {
     subPracas: [],
     origens: []
   })
+  const [dateFilter, setDateFilter] = useState({
+    startDate: '',
+    endDate: ''
+  })
 
   // Filtros temporariamente desativados
   const handleFiltersChange = useCallback((newFilters: DashboardFiltersType) => {
     setFilters(newFilters)
+  }, [])
+
+  // Handlers para filtro de data
+  const handleDateFilterChange = useCallback((field: 'startDate' | 'endDate', value: string) => {
+    setDateFilter(prev => ({ ...prev, [field]: value }))
+  }, [])
+
+  const handleApplyDateFilter = useCallback(() => {
+    setFilters(prev => ({
+      ...prev,
+      startDate: dateFilter.startDate,
+      endDate: dateFilter.endDate
+    }))
+    // Recarregar dados será feito pelo useEffect
+  }, [dateFilter])
+
+  const handleClearDateFilter = useCallback(() => {
+    setDateFilter({ startDate: '', endDate: '' })
+    setFilters(prev => ({
+      ...prev,
+      startDate: '',
+      endDate: ''
+    }))
+    // Recarregar dados será feito pelo useEffect
   }, [])
 
   const loadDashboardData = useCallback(async (showRefreshing = false) => {
@@ -113,7 +142,14 @@ export default function DashboardOptimized() {
       setPracaData([])
       setError(null)
     }
-  }, [user]) // Removido loadDashboardData completamente
+  }, [user, loadDashboardData])
+
+  // Recarregar dados quando filtros de data mudarem
+  useEffect(() => {
+    if (user && (filters.startDate || filters.endDate)) {
+      loadDashboardData(true)
+    }
+  }, [filters.startDate, filters.endDate, user, loadDashboardData])
 
   // Filtros desativados temporariamente para resolver loop
 
@@ -222,6 +258,16 @@ export default function DashboardOptimized() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="space-y-8">
+        {/* Filtro de Data */}
+        <DateFilter
+          startDate={dateFilter.startDate}
+          endDate={dateFilter.endDate}
+          onStartDateChange={(date) => handleDateFilterChange('startDate', date)}
+          onEndDateChange={(date) => handleDateFilterChange('endDate', date)}
+          onApplyFilter={handleApplyDateFilter}
+          onClearFilter={handleClearDateFilter}
+        />
+
         {/* Header moderno */}
         <div className="bg-white shadow-sm border-b border-gray-200">
           <div className="px-6 py-6">

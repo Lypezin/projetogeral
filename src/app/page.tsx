@@ -57,7 +57,7 @@ export default function Home() {
               Dashboard Empresarial
             </h1>
             <p className="text-lg text-gray-600">
-              Sistema de importação e análise de dados de entregadores
+              Dashboard de análise de dados
             </p>
             
             {/* Botão de Admin */}
@@ -85,14 +85,19 @@ export default function Home() {
             </>
           )}
 
-          {/* Verificação do Supabase */}
-          {permissions?.is_admin && <TableChecker />}
+          {/* Conteúdo principal (apenas quando não está no painel admin) */}
+          {!showAdminPanel && (
+            <>
+              {/* Verificação do Supabase */}
+              {permissions?.is_admin && <TableChecker />}
 
-          {/* Componente de Importação */}
-          <ImportExcel onImportComplete={handleImportComplete} />
+              {/* Componente de Importação */}
+              <ImportExcel onImportComplete={handleImportComplete} />
 
-          {/* Dashboard */}
-          <Dashboard key={refreshKey} />
+              {/* Dashboard */}
+              <Dashboard key={refreshKey} />
+            </>
+          )}
         </div>
       </main>
     </div>
