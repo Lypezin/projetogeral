@@ -80,35 +80,59 @@ const parseTime = (timeStr: any): string => {
   return '00:00:00'
 }
 
+// Função para converter string para número seguro
+const safeParseInt = (value: any): number => {
+  if (!value || value === null || value === undefined) return 0
+  const num = parseInt(value.toString().replace(/[^\d-]/g, ''))
+  return isNaN(num) ? 0 : num
+}
+
+// Função para converter string para float seguro
+const safeParseFloat = (value: any): number => {
+  if (!value || value === null || value === undefined) return 0
+  const str = value.toString().replace(/[^\d.-]/g, '')
+  const num = parseFloat(str)
+  return isNaN(num) ? 0 : num
+}
+
+// Função para converter para string segura
+const safeToString = (value: any): string => {
+  if (!value || value === null || value === undefined) return ''
+  return value.toString().trim()
+}
+
 // Função para validar e converter linha do Excel
 const validateAndConvertRow = (row: any): DadosEmpresa | null => {
   try {
-    // Validações básicas
-    if (!row.data_do_periodo || !row.pessoa_entregadora) {
-      console.log('❌ Linha inválida - falta data_do_periodo ou pessoa_entregadora')
+    // Validações básicas mais permissivas
+    const dataValid = row.data_do_periodo !== null && row.data_do_periodo !== undefined && row.data_do_periodo !== ''
+    const pessoaValid = row.pessoa_entregadora !== null && row.pessoa_entregadora !== undefined && row.pessoa_entregadora !== ''
+    
+    if (!dataValid || !pessoaValid) {
+      console.log('❌ Linha inválida - falta dados obrigatórios')
       return null
     }
 
     const convertedRow = {
       data_do_periodo: parseExcelDate(row.data_do_periodo),
-      periodo: row.periodo?.toString() || '',
+      periodo: safeToString(row.periodo),
       duracao_do_periodo: parseTime(row.duracao_do_periodo),
-      numero_minimo_de_entregadores_regulares_na_escala: parseInt(row.numero_minimo_de_entregadores_regulares_na_escala) || 0,
-      tag: row.tag?.toString() || '',
-      id_da_pessoa_entregadora: row.id_da_pessoa_entregadora?.toString() || '',
-      pessoa_entregadora: row.pessoa_entregadora?.toString() || '',
-      praca: row.praca?.toString() || '',
-      sub_praca: row.sub_praca?.toString() || '',
-      origem: row.origem?.toString() || '',
-      tempo_disponivel_escalado: row.tempo_disponivel_escalado?.toString() || '',
+      numero_minimo_de_entregadores_regulares_na_escala: safeParseInt(row.numero_minimo_de_entregadores_regulares_na_escala),
+      tag: safeToString(row.tag),
+      id_da_pessoa_entregadora: safeToString(row.id_da_pessoa_entregadora),
+      pessoa_entregadora: safeToString(row.pessoa_entregadora),
+      praca: safeToString(row.praca),
+      sub_praca: safeToString(row.sub_praca),
+      origem: safeToString(row.origem),
+      tempo_disponivel_escalado: safeToString(row.tempo_disponivel_escalado),
       tempo_disponivel_absoluto: parseTime(row.tempo_disponivel_absoluto),
-      numero_de_corridas_ofertadas: parseInt(row.numero_de_corridas_ofertadas) || 0,
-      numero_de_corridas_aceitas: parseInt(row.numero_de_corridas_aceitas) || 0,
-      numero_de_corridas_rejeitadas: parseInt(row.numero_de_corridas_rejeitadas) || 0,
-      numero_de_corridas_completadas: parseInt(row.numero_de_corridas_completadas) || 0,
-      numero_de_corridas_canceladas_pela_pessoa_entregadora: parseInt(row.numero_de_corridas_canceladas_pela_pessoa_entregadora) || 0,
-      numero_de_pedidos_aceitos_e_concluidos: parseInt(row.numero_de_pedidos_aceitos_e_concluidos) || 0,
-      soma_das_taxas_das_corridas_aceitas: parseFloat(row.soma_das_taxas_das_corridas_aceitas) || 0
+      numero_de_corridas_ofertadas: safeParseInt(row.numero_de_corridas_ofertadas),
+      numero_de_corridas_aceitas: safeParseInt(row.numero_de_corridas_aceitas),
+      numero_de_corridas_rejeitadas: safeParseInt(row.numero_de_corridas_rejeitadas),
+      numero_de_corridas_completadas: safeParseInt(row.numero_de_corridas_completadas),
+      numero_de_corridas_canceladas_pela_pessoa_entregadora: safeParseInt(row.numero_de_corridas_canceladas_pela_pessoa_entregadora),
+      numero_de_pedidos_aceitos_e_concluidos: safeParseInt(row.numero_de_pedidos_aceitos_e_concluidos),
+      soma_das_taxas_das_corridas_aceitas: safeParseFloat(row.soma_das_taxas_das_corridas_aceitas)
     }
 
     // Log para debugging da conversão de data
@@ -187,25 +211,52 @@ export const importDataInBatches = async (
     try {
       console.log(`📦 Inserindo lote ${Math.floor(i/BATCH_SIZE) + 1} com ${batch.length} registros na tabela delivery_data...`)
       
+      // Filtra registros null/inválidos antes de inserir
+      const validBatch = batch.filter(record => record !== null)
+      
+      if (validBatch.length === 0) {
+        console.log(`⚠️ Lote ${Math.floor(i/BATCH_SIZE) + 1} não tem registros válidos, pulando...`)
+        continue
+      }
+      
       const { error } = await supabase
         .from('delivery_data')
-        .insert(batch)
+        .insert(validBatch)
       
       if (error) {
-        errors += batch.length
-        errorDetails.push(`Lote ${Math.floor(i/BATCH_SIZE) + 1}: ${error.message}`)
-        console.error('❌ Erro no lote:', error)
-        console.error('❌ Detalhes do erro:', error.details)
-        console.error('❌ Código do erro:', error.code)
-        console.error('❌ Hint:', error.hint)
+        // Se der erro, tenta inserir registro por registro para identificar o problemático
+        console.error('❌ Erro no lote completo, tentando inserção individual...')
+        console.error('❌ Erro original:', error)
         
-        // Para debugging, vamos mostrar um exemplo dos dados que estamos tentando inserir
-        if (i === 0) {
-          console.log('📋 Exemplo de dados do primeiro lote:', batch[0])
+        let batchSuccess = 0
+        let batchErrors = 0
+        
+        for (let j = 0; j < validBatch.length; j++) {
+          try {
+            const { error: singleError } = await supabase
+              .from('delivery_data')
+              .insert([validBatch[j]])
+            
+            if (singleError) {
+              batchErrors++
+              console.error(`❌ Erro no registro ${j + 1}:`, singleError.message)
+              console.error(`❌ Dados problemáticos:`, validBatch[j])
+            } else {
+              batchSuccess++
+            }
+          } catch (singleErr) {
+            batchErrors++
+            console.error(`❌ Erro inesperado no registro ${j + 1}:`, singleErr)
+          }
         }
+        
+        success += batchSuccess
+        errors += batchErrors
+        errorDetails.push(`Lote ${Math.floor(i/BATCH_SIZE) + 1}: ${batchSuccess} sucessos, ${batchErrors} erros`)
+        
       } else {
-        success += batch.length
-        console.log(`✅ Lote ${Math.floor(i/BATCH_SIZE) + 1} inserido com sucesso!`)
+        success += validBatch.length
+        console.log(`✅ Lote ${Math.floor(i/BATCH_SIZE) + 1} inserido com sucesso! (${validBatch.length} registros)`)
       }
     } catch (error) {
       errors += batch.length
@@ -296,6 +347,30 @@ export const testSingleInsert = async () => {
   } catch (error) {
     console.error('❌ Erro no teste:', error)
     return { success: false, error }
+  }
+}
+
+// Função para limpar todos os dados da tabela
+export const clearAllData = async () => {
+  try {
+    console.log('🗑️ Iniciando limpeza de todos os dados...')
+    
+    const { error } = await supabase
+      .from('delivery_data')
+      .delete()
+      .neq('id', 0) // Deleta todos os registros (neq 0 significa "not equal to 0", que pega tudo)
+    
+    if (error) {
+      console.error('❌ Erro ao limpar dados:', error)
+      throw error
+    }
+    
+    console.log('✅ Todos os dados foram removidos com sucesso!')
+    return { success: true }
+    
+  } catch (error) {
+    console.error('❌ Erro na limpeza:', error)
+    throw error
   }
 }
 
