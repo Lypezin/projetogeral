@@ -1,17 +1,20 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Database, AlertCircle, CheckCircle } from 'lucide-react'
+import { Database, AlertCircle, CheckCircle, TestTube } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { testSingleInsert } from '@/lib/importUtils'
 
 export default function TableChecker() {
   const [checking, setChecking] = useState(false)
+  const [testing, setTesting] = useState(false)
   const [result, setResult] = useState<{
     connected: boolean
     tableExists: boolean
     error?: string
     tables?: string[]
   } | null>(null)
+  const [testResult, setTestResult] = useState<any>(null)
 
   const checkConnection = async () => {
     setChecking(true)
@@ -92,6 +95,20 @@ export default function TableChecker() {
     }
   }
 
+  const testInsertion = async () => {
+    setTesting(true)
+    setTestResult(null)
+
+    try {
+      const result = await testSingleInsert()
+      setTestResult(result)
+    } catch (error) {
+      setTestResult({ success: false, error })
+    } finally {
+      setTesting(false)
+    }
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
       <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
@@ -99,13 +116,24 @@ export default function TableChecker() {
         Verificação do Supabase
       </h2>
 
-      <button
-        onClick={checkConnection}
-        disabled={checking}
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
-      >
-        {checking ? 'Verificando...' : 'Testar Conexão'}
-      </button>
+      <div className="flex space-x-4">
+        <button
+          onClick={checkConnection}
+          disabled={checking}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
+        >
+          {checking ? 'Verificando...' : 'Testar Conexão'}
+        </button>
+
+        <button
+          onClick={testInsertion}
+          disabled={testing}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center"
+        >
+          <TestTube className="mr-2 h-4 w-4" />
+          {testing ? 'Testando...' : 'Testar Inserção'}
+        </button>
+      </div>
 
       {result && (
         <div className="mt-4 space-y-3">
@@ -205,6 +233,37 @@ export default function TableChecker() {
               </pre>
             </div>
           )}
+        </div>
+      )}
+
+      {testResult && (
+        <div className="mt-4">
+          <h3 className="font-medium text-gray-800 mb-2">Resultado do Teste de Inserção:</h3>
+          <div className={`p-3 rounded ${
+            testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+          }`}>
+            {testResult.success ? (
+              <div>
+                <div className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                  <span className="font-medium text-green-800">Teste bem-sucedido!</span>
+                </div>
+                <pre className="text-xs mt-2 text-green-700 overflow-x-auto">
+                  {JSON.stringify(testResult.data, null, 2)}
+                </pre>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center">
+                  <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
+                  <span className="font-medium text-red-800">Erro no teste:</span>
+                </div>
+                <pre className="text-xs mt-2 text-red-700 overflow-x-auto">
+                  {JSON.stringify(testResult.error, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

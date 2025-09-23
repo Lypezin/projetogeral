@@ -132,6 +132,14 @@ export const importDataInBatches = async (
         errors += batch.length
         errorDetails.push(`Lote ${Math.floor(i/BATCH_SIZE) + 1}: ${error.message}`)
         console.error('❌ Erro no lote:', error)
+        console.error('❌ Detalhes do erro:', error.details)
+        console.error('❌ Código do erro:', error.code)
+        console.error('❌ Hint:', error.hint)
+        
+        // Para debugging, vamos mostrar um exemplo dos dados que estamos tentando inserir
+        if (i === 0) {
+          console.log('📋 Exemplo de dados do primeiro lote:', batch[0])
+        }
       } else {
         success += batch.length
         console.log(`✅ Lote ${Math.floor(i/BATCH_SIZE) + 1} inserido com sucesso!`)
@@ -174,6 +182,57 @@ export const checkTable = async () => {
   } catch (error) {
     console.error('Erro ao verificar tabela:', error)
     return { exists: false, error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+// Função para testar inserção de um único registro
+export const testSingleInsert = async () => {
+  try {
+    console.log('🧪 Testando inserção de um único registro...')
+    
+    const testRecord = {
+      data_do_periodo: '2024-01-01',
+      periodo: 'manhã',
+      duracao_do_periodo: '08:00:00',
+      numero_minimo_de_entregadores_regulares_na_escala: 5,
+      tag: 'teste',
+      id_da_pessoa_entregadora: '123',
+      pessoa_entregadora: 'João Teste',
+      praca: 'São Paulo',
+      sub_praca: 'Centro',
+      origem: 'App',
+      tempo_disponivel_escalado: '480',
+      tempo_disponivel_absoluto: '08:00:00',
+      numero_de_corridas_ofertadas: 10,
+      numero_de_corridas_aceitas: 8,
+      numero_de_corridas_rejeitadas: 2,
+      numero_de_corridas_completadas: 7,
+      numero_de_corridas_canceladas_pela_pessoa_entregadora: 1,
+      numero_de_pedidos_aceitos_e_concluidos: 7,
+      soma_das_taxas_das_corridas_aceitas: 45.50
+    }
+    
+    console.log('📋 Dados do teste:', testRecord)
+    
+    const { data, error } = await supabase
+      .from('delivery_data')
+      .insert([testRecord])
+      .select()
+    
+    if (error) {
+      console.error('❌ Erro no teste:', error)
+      console.error('❌ Detalhes:', error.details)
+      console.error('❌ Código:', error.code)
+      console.error('❌ Hint:', error.hint)
+      return { success: false, error }
+    }
+    
+    console.log('✅ Teste bem-sucedido:', data)
+    return { success: true, data }
+    
+  } catch (error) {
+    console.error('❌ Erro no teste:', error)
+    return { success: false, error }
   }
 }
 
