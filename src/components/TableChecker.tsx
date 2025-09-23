@@ -28,20 +28,37 @@ export default function TableChecker() {
         throw new Error(`Erro de conexão: ${connectionError.message}`)
       }
 
-      // Teste 2: Listar tabelas (tenta várias possibilidades)
+      // Teste 2: Verificar se a tabela delivery_data existe
+      try {
+        const { data, error } = await supabase
+          .from('delivery_data')
+          .select('*')
+          .limit(1)
+
+        if (!error) {
+          setResult({
+            connected: true,
+            tableExists: true,
+            tables: ['delivery_data']
+          })
+          return
+        }
+      } catch (e) {
+        // Tabela não existe
+      }
+
+      // Se chegou aqui, a tabela delivery_data não existe
+      // Vamos listar outras tabelas que possam existir
       const possibleTables = [
         'dados_empresa', 
         'entregadores', 
         'corridas', 
         'data', 
         'empresa_dados',
-        'public.dados_empresa',
-        'delivery_data',
         'empresa'
       ]
 
       const existingTables: string[] = []
-      let tableExists = false
 
       for (const tableName of possibleTables) {
         try {
@@ -52,9 +69,6 @@ export default function TableChecker() {
 
           if (!error) {
             existingTables.push(tableName)
-            if (tableName === 'dados_empresa') {
-              tableExists = true
-            }
           }
         } catch (e) {
           // Tabela não existe, continue
@@ -63,7 +77,7 @@ export default function TableChecker() {
 
       setResult({
         connected: true,
-        tableExists,
+        tableExists: false,
         tables: existingTables
       })
 
@@ -129,8 +143,8 @@ export default function TableChecker() {
                 result.tableExists ? 'text-green-800' : 'text-yellow-800'
               }`}>
                 {result.tableExists 
-                  ? 'Tabela "dados_empresa" encontrada' 
-                  : 'Tabela "dados_empresa" não encontrada'
+                  ? 'Tabela "delivery_data" encontrada' 
+                  : 'Tabela "delivery_data" não encontrada'
                 }
               </span>
             </div>
@@ -165,7 +179,7 @@ export default function TableChecker() {
                 Para criar a tabela no Supabase:
               </p>
               <pre className="text-xs bg-gray-800 text-gray-100 p-2 rounded overflow-x-auto">
-{`CREATE TABLE dados_empresa (
+{`CREATE TABLE delivery_data (
   id SERIAL PRIMARY KEY,
   data_do_periodo TEXT,
   periodo TEXT,
