@@ -1,6 +1,43 @@
 import * as XLSX from 'xlsx'
 import { supabase, DadosEmpresa } from './supabase'
 
+// Função para converter data serial do Excel para formato YYYY-MM-DD
+const parseExcelDate = (dateValue: any): string => {
+  if (!dateValue || dateValue === null || dateValue === undefined) {
+    return new Date().toISOString().split('T')[0] // Data atual como fallback
+  }
+  
+  // Se é um número (data serial do Excel)
+  if (typeof dateValue === 'number') {
+    // Excel serial date: número de dias desde 1900-01-01 (com ajuste para bug do Excel)
+    const excelEpoch = new Date(1900, 0, 1)
+    const days = dateValue - 2 // Ajuste para o bug do Excel (conta 1900 como ano bissexto)
+    const resultDate = new Date(excelEpoch.getTime() + days * 24 * 60 * 60 * 1000)
+    return resultDate.toISOString().split('T')[0]
+  }
+  
+  // Se é string, tenta converter
+  const dateString = dateValue.toString().trim()
+  
+  // Se já está no formato YYYY-MM-DD, retorna
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return dateString
+  }
+  
+  // Tenta parse da string
+  try {
+    const parsedDate = new Date(dateString)
+    if (!isNaN(parsedDate.getTime())) {
+      return parsedDate.toISOString().split('T')[0]
+    }
+  } catch (e) {
+    // Ignora erro
+  }
+  
+  // Fallback para data atual
+  return new Date().toISOString().split('T')[0]
+}
+
 // Função para converter tempo HH:MM:SS para segundos ou manter formato
 const parseTime = (timeStr: any): string => {
   // Se é null, undefined ou vazio, retorna padrão
@@ -40,7 +77,7 @@ const validateAndConvertRow = (row: any): DadosEmpresa | null => {
     }
 
     const convertedRow = {
-      data_do_periodo: row.data_do_periodo?.toString() || '',
+      data_do_periodo: parseExcelDate(row.data_do_periodo),
       periodo: row.periodo?.toString() || '',
       duracao_do_periodo: parseTime(row.duracao_do_periodo),
       numero_minimo_de_entregadores_regulares_na_escala: parseInt(row.numero_minimo_de_entregadores_regulares_na_escala) || 0,
@@ -61,6 +98,11 @@ const validateAndConvertRow = (row: any): DadosEmpresa | null => {
       soma_das_taxas_das_corridas_aceitas: parseFloat(row.soma_das_taxas_das_corridas_aceitas) || 0
     }
 
+    // Log para debugging da conversão de data
+    if (typeof row.data_do_periodo === 'number') {
+      console.log(`📅 Data convertida: ${row.data_do_periodo} → ${convertedRow.data_do_periodo}`)
+    }
+    
     console.log('✅ Linha convertida com sucesso')
     return convertedRow
   } catch (error) {
