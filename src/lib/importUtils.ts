@@ -161,7 +161,7 @@ export const checkTable = async () => {
     return { exists: true, error: null }
   } catch (error) {
     console.error('Erro ao verificar tabela:', error)
-    return { exists: false, error: error.toString() }
+    return { exists: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
