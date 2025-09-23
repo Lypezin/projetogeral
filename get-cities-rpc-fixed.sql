@@ -1,5 +1,5 @@
 -- ===============================================
--- FUNÇÃO RPC PARA BUSCAR CIDADES DISTINTAS
+-- FUNÇÕES RPC CORRIGIDAS PARA BUSCAR CIDADES
 -- ===============================================
 
 -- Função para obter todas as cidades disponíveis no sistema
@@ -66,50 +66,29 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Função para obter estatísticas das cidades
+-- Função simplificada para obter estatísticas das cidades
 CREATE OR REPLACE FUNCTION get_cities_stats()
 RETURNS TABLE (
   total_cities BIGINT,
-  total_records BIGINT,
-  cities_with_data JSONB
+  total_records BIGINT
 ) AS $$
 BEGIN
   RETURN QUERY
   SELECT 
     COUNT(DISTINCT d.praca) as total_cities,
-    COUNT(*) as total_records,
-    COALESCE(
-      jsonb_agg(
-        jsonb_build_object(
-          'praca', d.praca,
-          'sub_pracas', sub_pracas.sub_pracas,
-          'count', sub_pracas.total_records,
-          'last_import', sub_pracas.last_import::text
-        ) ORDER BY d.praca
-      ) FILTER (WHERE d.praca IS NOT NULL),
-      '[]'::jsonb
-    ) as cities_with_data
+    COUNT(*) as total_records
   FROM delivery_data d
-  LEFT JOIN (
-    SELECT 
-      praca,
-      ARRAY_AGG(DISTINCT sub_praca ORDER BY sub_praca) as sub_pracas,
-      COUNT(*) as total_records,
-      MAX(created_at) as last_import
-    FROM delivery_data
-    WHERE praca IS NOT NULL AND praca != ''
-    GROUP BY praca
-  ) sub_pracas ON d.praca = sub_pracas.praca
-  WHERE d.praca IS NOT NULL AND d.praca != '';
+  WHERE d.praca IS NOT NULL 
+    AND d.praca != '';
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Testar as funções
 SELECT 'Testando get_available_cities()' as test;
-SELECT * FROM get_available_cities();
+SELECT * FROM get_available_cities() LIMIT 5;
 
 SELECT 'Testando get_cities_list()' as test;
-SELECT * FROM get_cities_list();
+SELECT * FROM get_cities_list() LIMIT 10;
 
 SELECT 'Testando get_cities_stats()' as test;
 SELECT * FROM get_cities_stats();
@@ -122,5 +101,5 @@ BEGIN
   RAISE NOTICE '📋 Use get_cities_list() para obter apenas os nomes das cidades';
   RAISE NOTICE '🔍 Use get_sub_pracas_by_city(nome_cidade) para sub-praças específicas';
   RAISE NOTICE '✅ Use city_exists(nome_cidade) para verificar se cidade existe';
-  RAISE NOTICE '📈 Use get_cities_stats() para estatísticas completas';
+  RAISE NOTICE '📈 Use get_cities_stats() para estatísticas básicas';
 END $$;

@@ -34,7 +34,7 @@ export class CitiesManager {
         praca: row.praca,
         sub_pracas: row.sub_pracas || [],
         count: parseInt(row.total_records) || 0,
-        last_import: row.last_import
+        last_import: row.last_import ? new Date(row.last_import).toISOString() : new Date().toISOString()
       }))
 
       console.log('✅ CitiesManager: Cidades encontradas via RPC:', cities.length)
@@ -256,17 +256,14 @@ export class CitiesManager {
       }
 
       const stats = data[0]
-      const cities_with_data: CityData[] = stats.cities_with_data.map((city: any) => ({
-        praca: city.praca,
-        sub_pracas: city.sub_pracas || [],
-        count: city.count || 0,
-        last_import: city.last_import
-      }))
+      
+      // Buscar cidades completas separadamente
+      const cities = await this.getAvailableCities()
 
       const result = {
         total_cities: parseInt(stats.total_cities) || 0,
         total_records: parseInt(stats.total_records) || 0,
-        cities_with_data
+        cities_with_data: cities
       }
 
       console.log('✅ CitiesManager: Estatísticas via RPC:', result.total_cities, 'cidades,', result.total_records, 'registros')
