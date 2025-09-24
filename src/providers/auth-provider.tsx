@@ -76,11 +76,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true
+    let isInitialized = false
 
     console.log('🚀 AuthProvider: Iniciando useEffect')
 
-    // Função para inicializar autenticação
     const initializeAuth = async () => {
+      if (isInitialized || !mounted) return
+      isInitialized = true
+
       try {
         console.log('🔄 AuthProvider: Verificando sessão...')
         
@@ -127,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Inicializar
+    // Inicializar apenas uma vez
     initializeAuth()
 
     // Escutar mudanças de autenticação
@@ -162,7 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [fetchUserPermissions])
+  }, []) // Removido fetchUserPermissions para evitar loops
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({

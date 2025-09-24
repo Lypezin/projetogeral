@@ -259,7 +259,7 @@ export default function DashboardOptimized() {
   const totalOfertadas = stats.total_ofertadas
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="space-y-8">
         {/* Filtro de Data */}
         <DateFilter
@@ -272,20 +272,24 @@ export default function DashboardOptimized() {
         />
 
         {/* Header moderno */}
-        <div className="bg-white shadow-sm border-b border-gray-200">
-          <div className="px-6 py-6">
+        <div className="bg-white/80 backdrop-blur-sm shadow-xl border border-white/20 rounded-3xl overflow-hidden">
+          <div className="px-8 py-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-                <p className="text-gray-600 mt-1">Insights em tempo real dos seus dados de entrega</p>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Analytics Dashboard
+                </h1>
+                <p className="text-gray-600 mt-2 text-lg">Insights em tempo real dos seus dados de entrega</p>
               </div>
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:opacity-50 shadow-lg hover:shadow-xl"
+                className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-2xl flex items-center gap-3 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
               >
-                <RefreshCw className={`w-5 h-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                {refreshing ? 'Atualizando...' : 'Atualizar Dados'}
+                <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+                <span className="font-semibold">
+                  {refreshing ? 'Atualizando...' : 'Atualizar Dados'}
+                </span>
               </button>
             </div>
           </div>
