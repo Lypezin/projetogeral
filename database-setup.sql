@@ -52,6 +52,23 @@ CREATE POLICY "Users can insert own permissions" ON user_permissions
 CREATE POLICY "Users can update own permissions" ON user_permissions
   FOR UPDATE USING (auth.uid() = user_id);
 
+-- 4. FUNÇÃO E TRIGGER PARA ATUALIZAR `updated_at`
+-- Esta função será chamada por um trigger sempre que uma linha for atualizada.
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- O trigger é recriado para garantir que está usando a função mais recente.
+DROP TRIGGER IF EXISTS update_user_permissions_updated_at ON public.user_permissions;
+CREATE TRIGGER update_user_permissions_updated_at
+BEFORE UPDATE ON public.user_permissions
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_updated_at();
+
 -- 4. FUNÇÕES RPC PARA CONSULTAS OTIMIZADAS
 -- Estas funções permitem consultar dados com alta performance mesmo com +1M registros
 
@@ -93,9 +110,9 @@ BEGIN
     SELECT *
     FROM delivery_data
     WHERE 
-      -- Filtro de data
-      (start_date IS NULL OR data_do_periodo::DATE >= start_date) AND
-      (end_date IS NULL OR data_do_periodo::DATE <= end_date) AND
+      -- Filtro de data robusto com conversão para timestamp
+      (start_date IS NULL OR data_do_periodo >= start_date::TIMESTAMP) AND
+      (end_date IS NULL OR data_do_periodo < (end_date::TIMESTAMP + INTERVAL '1 day')) AND
       -- Filtro de sub-praças
       (sub_pracas IS NULL OR array_length(sub_pracas, 1) = 0 OR sub_praca = ANY(sub_pracas)) AND
       -- Filtro de origens
@@ -169,9 +186,12 @@ BEGIN
     SELECT *
     FROM delivery_data
     WHERE 
-      (start_date IS NULL OR data_do_periodo::DATE >= start_date) AND
-      (end_date IS NULL OR data_do_periodo::DATE <= end_date) AND
+      -- Filtro de data robusto com conversão para timestamp
+      (start_date IS NULL OR data_do_periodo >= start_date::TIMESTAMP) AND
+      (end_date IS NULL OR data_do_periodo < (end_date::TIMESTAMP + INTERVAL '1 day')) AND
+      -- Filtro de sub-praças
       (sub_pracas IS NULL OR array_length(sub_pracas, 1) = 0 OR sub_praca = ANY(sub_pracas)) AND
+      -- Filtro de origens
       (origens IS NULL OR array_length(origens, 1) = 0 OR origem = ANY(origens)) AND
       (
         COALESCE(is_user_admin, FALSE) = TRUE OR 
@@ -273,20 +293,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 5. TRIGGER PARA ATUALIZAR updated_at
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER update_user_permissions_updated_at
-    BEFORE UPDATE ON user_permissions
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
 -- 6. DADOS INICIAIS (EXEMPLO)
 -- Criar um usuário admin inicial (substitua o UUID pelo ID do seu usuário)
 -- INSERT INTO user_permissions (user_id, is_admin) 
@@ -297,7 +303,3 @@ CREATE TRIGGER update_user_permissions_updated_at
 COMMENT ON TABLE user_permissions IS 'Armazena permissões de acesso por usuário';
 COMMENT ON COLUMN user_permissions.allowed_pracas IS 'Array de praças que o usuário pode visualizar';
 COMMENT ON COLUMN user_permissions.is_admin IS 'Se TRUE, usuário tem acesso completo ao sistema';
-
-COMMENT ON FUNCTION get_dashboard_stats IS 'Retorna estatísticas gerais do dashboard respeitando permissões do usuário';
-COMMENT ON FUNCTION get_data_by_praca IS 'Retorna dados agrupados por praça respeitando permissões do usuário';
-COMMENT ON FUNCTION get_data_by_period IS 'Retorna dados agrupados por período respeitando permissões do usuário';

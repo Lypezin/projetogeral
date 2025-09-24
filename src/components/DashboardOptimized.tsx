@@ -319,9 +319,9 @@ export default function DashboardOptimized() {
                       <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                       <span className="text-sm font-medium text-blue-800">Filtros Ativos:</span>
                       <span className="text-sm text-blue-700">
-                        {filters.startDate && `De ${new Date(filters.startDate).toLocaleDateString('pt-BR')}`}
+                        {filters.startDate && `De ${new Date(filters.startDate + 'T00:00:00').toLocaleDateString('pt-BR')}`}
                         {filters.startDate && filters.endDate && ' até '}
-                        {filters.endDate && `${new Date(filters.endDate).toLocaleDateString('pt-BR')}`}
+                        {filters.endDate && `${new Date(filters.endDate + 'T00:00:00').toLocaleDateString('pt-BR')}`}
                       </span>
                     </div>
                   </div>
