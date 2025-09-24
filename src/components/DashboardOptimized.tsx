@@ -89,17 +89,23 @@ export default function DashboardOptimized() {
       ...prev,
       ...newFilters
     }))
-    // Recarregar dados será feito pelo useEffect
+    
+    // Forçar recarregamento imediato dos dados
+    console.log('🚀 Forçando recarregamento com filtros:', newFilters)
+    // Recarregamento será feito pelo useEffect
   }, [dateFilter])
 
   const handleClearDateFilter = useCallback(() => {
+    console.log('🧹 Limpando filtros de data')
     setDateFilter({ startDate: '', endDate: '' })
     setFilters(prev => ({
       ...prev,
       startDate: '',
       endDate: ''
     }))
-    // Recarregar dados será feito pelo useEffect
+    
+    // Recarregamento será feito pelo useEffect
+    console.log('🚀 Limpando filtros - recarregamento será feito pelo useEffect')
   }, [])
 
   const loadDashboardData = useCallback(async (showRefreshing = false) => {
