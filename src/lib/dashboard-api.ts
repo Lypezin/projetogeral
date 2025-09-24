@@ -54,6 +54,14 @@ export class DashboardAPI {
     origens?: string[]
   ): Promise<{ data: DashboardStats | null; error: any }> {
     try {
+      console.log('📊 DashboardAPI.getDashboardStats chamado com:', {
+        userId,
+        startDate,
+        endDate,
+        subPracas,
+        origens
+      })
+
       const { data, error } = await this.supabase.rpc('get_dashboard_stats', {
         user_id_param: userId || null,
         start_date: startDate || null,
@@ -61,6 +69,8 @@ export class DashboardAPI {
         sub_pracas: subPracas && subPracas.length > 0 ? subPracas : null,
         origens: origens && origens.length > 0 ? origens : null
       })
+
+      console.log('📊 RPC get_dashboard_stats resultado:', { data, error })
 
       if (error) {
         console.error('Erro ao obter estatísticas do dashboard:', error)

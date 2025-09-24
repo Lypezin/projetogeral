@@ -122,6 +122,7 @@ export default function DashboardOptimized() {
       setError(null)
 
       console.log('🔄 Carregando dados com filtros:', filters)
+      console.log('🔄 Filtros de data:', { startDate: filters.startDate, endDate: filters.endDate })
 
       // Carregar dados em paralelo COM filtros
       const [statsResult, pracaResult] = await Promise.all([

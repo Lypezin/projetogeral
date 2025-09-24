@@ -150,7 +150,7 @@ export default function DateFilter({
               onChange={(e) => onStartDateChange(e.target.value)}
               min={dateRange?.firstDate}
               max={dateRange?.lastDate}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-900 bg-white"
               placeholder="Selecione a data inicial"
             />
           </div>
@@ -169,7 +169,7 @@ export default function DateFilter({
               onChange={(e) => onEndDateChange(e.target.value)}
               min={startDate || dateRange?.firstDate}
               max={dateRange?.lastDate}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-900 bg-white"
               placeholder="Selecione a data final"
             />
           </div>
@@ -211,8 +211,8 @@ export default function DateFilter({
         </div>
       </div>
 
-      {/* Status do Filtro com Visualização Detalhada */}
-      {(startDate || endDate) && (
+      {/* Status do Filtro removido */}
+      {false && (
         <div className="mt-6 space-y-4">
           {/* Filtro Ativo */}
           <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl">
