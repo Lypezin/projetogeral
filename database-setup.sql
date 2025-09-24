@@ -76,7 +76,8 @@ FOR EACH ROW EXECUTE FUNCTION public.sync_admin_users();
 
 -- 6. RLS completo
 ALTER TABLE public.user_permissions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
+-- admin_users é usado apenas internamente, sem RLS para evitar recursão
+ALTER TABLE public.admin_users DISABLE ROW LEVEL SECURITY;
 
 DO $$
 DECLARE pol record;
@@ -84,49 +85,7 @@ BEGIN
   FOR pol IN SELECT policyname FROM pg_policies WHERE schemaname='public' AND tablename='user_permissions' LOOP
     EXECUTE format('DROP POLICY %I ON public.user_permissions', pol.policyname);
   END LOOP;
-  FOR pol IN SELECT policyname FROM pg_policies WHERE schemaname='public' AND tablename='admin_users' LOOP
-    EXECUTE format('DROP POLICY %I ON public.admin_users', pol.policyname);
-  END LOOP;
 END $$;
-
-CREATE POLICY up_select_self_or_admin ON public.user_permissions
-FOR SELECT
-USING (
-  auth.uid() = user_id
-  OR EXISTS (SELECT 1 FROM public.admin_users au WHERE au.user_id = auth.uid())
-);
-
-CREATE POLICY up_insert_self ON public.user_permissions
-FOR INSERT
-WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY up_update_self_or_admin ON public.user_permissions
-FOR UPDATE
-USING (
-  auth.uid() = user_id
-  OR EXISTS (SELECT 1 FROM public.admin_users au WHERE au.user_id = auth.uid())
-)
-WITH CHECK (
-  auth.uid() = user_id
-  OR EXISTS (SELECT 1 FROM public.admin_users au WHERE au.user_id = auth.uid())
-);
-
-CREATE POLICY up_delete_self_or_admin ON public.user_permissions
-FOR DELETE
-USING (
-  auth.uid() = user_id
-  OR EXISTS (SELECT 1 FROM public.admin_users au WHERE au.user_id = auth.uid())
-);
-
-CREATE POLICY admin_users_access ON public.admin_users
-FOR ALL
-USING (EXISTS (SELECT 1 FROM public.admin_users au WHERE au.user_id = auth.uid()))
-WITH CHECK (EXISTS (SELECT 1 FROM public.admin_users au WHERE au.user_id = auth.uid()));
-
--- Sincronizar admins existentes
-INSERT INTO public.admin_users(user_id)
-SELECT user_id FROM public.user_permissions WHERE is_admin = TRUE
-ON CONFLICT (user_id) DO NOTHING;
 
 -- 7. Funções RPC atualizadas
 CREATE OR REPLACE FUNCTION public.get_dashboard_stats_v2(
@@ -144,7 +103,7 @@ RETURNS TABLE (
   total_completadas BIGINT,
   total_canceladas BIGINT,
   total_pedidos_concluidos BIGINT,
-  total_taxas BIGINT,
+  total_taxas NUMERIC,
   data_range JSON,
   pracas_disponiveis TEXT[]
 )
@@ -152,8 +111,8 @@ LANGUAGE plpgsql SECURITY DEFINER
 AS $$
 DECLARE
   viewer UUID := COALESCE(user_id_param, auth.uid());
-  viewer_is_admin BOOLEAN;
-  viewer_pracas TEXT[];
+  viewer_is_admin BOOLEAN := FALSE;
+  viewer_pracas TEXT[] := '{}';
 BEGIN
   SELECT is_admin, allowed_pracas INTO viewer_is_admin, viewer_pracas
   FROM public.user_permissions
@@ -169,23 +128,22 @@ BEGIN
       (sub_pracas IS NULL OR array_length(sub_pracas,1)=0 OR d.sub_praca = ANY(sub_pracas)) AND
       (origens IS NULL OR array_length(origens,1)=0 OR d.origem = ANY(origens)) AND
       (
-        viewer_is_admin
-        OR viewer_pracas IS NULL OR array_length(viewer_pracas,1)=0
-        OR d.praca = ANY(viewer_pracas)
-        OR 'Todas' = ANY(viewer_pracas)
+        viewer_is_admin OR
+        viewer_pracas IS NULL OR array_length(viewer_pracas,1)=0 OR
+        d.praca = ANY(viewer_pracas) OR 'Todas' = ANY(viewer_pracas)
       )
   )
   SELECT
-    COUNT(*),
-    COALESCE(SUM(numero_de_corridas_ofertadas),0),
-    COALESCE(SUM(numero_de_corridas_aceitas),0),
-    COALESCE(SUM(numero_de_corridas_rejeitadas),0),
-    COALESCE(SUM(numero_de_corridas_completadas),0),
-    COALESCE(SUM(numero_de_corridas_canceladas_pela_pessoa_entregadora),0),
-    COALESCE(SUM(numero_de_pedidos_aceitos_e_concluidos),0),
-    COALESCE(SUM(soma_das_taxas_das_corridas_aceitas),0),
-    json_build_object('start_date', MIN(data_do_periodo::DATE),'end_date', MAX(data_do_periodo::DATE)),
-    COALESCE(array_agg(DISTINCT praca) FILTER (WHERE praca IS NOT NULL AND praca <> ''), '{}')
+    COUNT(*)::BIGINT,
+    COALESCE(SUM(numero_de_corridas_ofertadas)::BIGINT,0),
+    COALESCE(SUM(numero_de_corridas_aceitas)::BIGINT,0),
+    COALESCE(SUM(numero_de_corridas_rejeitadas)::BIGINT,0),
+    COALESCE(SUM(numero_de_corridas_completadas)::BIGINT,0),
+    COALESCE(SUM(numero_de_corridas_canceladas_pela_pessoa_entregadora)::BIGINT,0),
+    COALESCE(SUM(numero_de_pedidos_aceitos_e_concluidos)::BIGINT,0),
+    COALESCE(SUM(soma_das_taxas_das_corridas_aceitas)::NUMERIC,0),
+    json_build_object('start_date', MIN(data_do_periodo::DATE), 'end_date', MAX(data_do_periodo::DATE)),
+    COALESCE(array_agg(DISTINCT praca) FILTER (WHERE praca IS NOT NULL AND praca <> ''), ARRAY[]::TEXT[])
   FROM dados;
 END;
 $$;
@@ -208,8 +166,8 @@ LANGUAGE plpgsql SECURITY DEFINER
 AS $$
 DECLARE
   viewer UUID := COALESCE(user_id_param, auth.uid());
-  viewer_is_admin BOOLEAN;
-  viewer_pracas TEXT[];
+  viewer_is_admin BOOLEAN := FALSE;
+  viewer_pracas TEXT[] := '{}';
 BEGIN
   SELECT is_admin, allowed_pracas INTO viewer_is_admin, viewer_pracas
   FROM public.user_permissions
@@ -225,18 +183,17 @@ BEGIN
       (sub_pracas IS NULL OR array_length(sub_pracas,1)=0 OR d.sub_praca = ANY(sub_pracas)) AND
       (origens IS NULL OR array_length(origens,1)=0 OR d.origem = ANY(origens)) AND
       (
-        viewer_is_admin
-        OR viewer_pracas IS NULL OR array_length(viewer_pracas,1)=0
-        OR d.praca = ANY(viewer_pracas)
-        OR 'Todas' = ANY(viewer_pracas)
+        viewer_is_admin OR
+        viewer_pracas IS NULL OR array_length(viewer_pracas,1)=0 OR
+        d.praca = ANY(viewer_pracas) OR 'Todas' = ANY(viewer_pracas)
       )
   )
   SELECT
     d.praca,
-    COALESCE(SUM(d.numero_de_corridas_ofertadas),0),
-    COALESCE(SUM(d.numero_de_corridas_aceitas),0),
-    COALESCE(SUM(d.numero_de_corridas_rejeitadas),0),
-    COALESCE(SUM(d.numero_de_corridas_completadas),0)
+    COALESCE(SUM(d.numero_de_corridas_ofertadas)::BIGINT,0),
+    COALESCE(SUM(d.numero_de_corridas_aceitas)::BIGINT,0),
+    COALESCE(SUM(d.numero_de_corridas_rejeitadas)::BIGINT,0),
+    COALESCE(SUM(d.numero_de_corridas_completadas)::BIGINT,0)
   FROM dados d
   WHERE d.praca IS NOT NULL AND d.praca <> ''
   GROUP BY d.praca
@@ -263,8 +220,8 @@ LANGUAGE plpgsql SECURITY DEFINER
 AS $$
 DECLARE
   viewer UUID := COALESCE(user_id_param, auth.uid());
-  viewer_is_admin BOOLEAN;
-  viewer_pracas TEXT[];
+  viewer_is_admin BOOLEAN := FALSE;
+  viewer_pracas TEXT[] := '{}';
 BEGIN
   SELECT is_admin, allowed_pracas INTO viewer_is_admin, viewer_pracas
   FROM public.user_permissions
@@ -280,10 +237,9 @@ BEGIN
       (sub_pracas IS NULL OR array_length(sub_pracas,1)=0 OR d.sub_praca = ANY(sub_pracas)) AND
       (origens IS NULL OR array_length(origens,1)=0 OR d.origem = ANY(origens)) AND
       (
-        viewer_is_admin
-        OR viewer_pracas IS NULL OR array_length(viewer_pracas,1)=0
-        OR d.praca = ANY(viewer_pracas)
-        OR 'Todas' = ANY(viewer_pracas)
+        viewer_is_admin OR
+        viewer_pracas IS NULL OR array_length(viewer_pracas,1)=0 OR
+        d.praca = ANY(viewer_pracas) OR 'Todas' = ANY(viewer_pracas)
       )
   )
   SELECT
@@ -292,10 +248,10 @@ BEGIN
       WHEN grouping_period = 'month' THEN date_trunc('month', d.data_do_periodo)
       ELSE date_trunc('day', d.data_do_periodo)
     END,
-    COALESCE(SUM(d.numero_de_corridas_ofertadas),0),
-    COALESCE(SUM(d.numero_de_corridas_aceitas),0),
-    COALESCE(SUM(d.numero_de_corridas_rejeitadas),0),
-    COALESCE(SUM(d.numero_de_corridas_completadas),0)
+    COALESCE(SUM(d.numero_de_corridas_ofertadas)::BIGINT,0),
+    COALESCE(SUM(d.numero_de_corridas_aceitas)::BIGINT,0),
+    COALESCE(SUM(d.numero_de_corridas_rejeitadas)::BIGINT,0),
+    COALESCE(SUM(d.numero_de_corridas_completadas)::BIGINT,0)
   FROM dados d
   GROUP BY 1
   ORDER BY 1;
