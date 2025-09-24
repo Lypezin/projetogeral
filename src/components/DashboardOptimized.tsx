@@ -2,41 +2,43 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import { TrendingUp, TrendingDown, Activity, CheckCircle, XCircle, Clock, BarChart3, RefreshCw, AlertTriangle } from 'lucide-react'
+import { TrendingUp, TrendingDown, Activity, CheckCircle, XCircle, Clock, BarChart3, RefreshCw, AlertTriangle, Users } from 'lucide-react'
 import { useAuth } from '@/providers/auth-provider'
 import { dashboardAPI, DashboardStats, DataByPraca } from '@/lib/dashboard-api'
 import DashboardFilters, { DashboardFiltersType } from './DashboardFilters'
 import DateFilter from './DateFilter'
 
 interface StatsCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  color: string;
+  icon: React.ReactNode
+  label: string
+  value: number | undefined | null
+  color: 'indigo' | 'green' | 'blue' | 'red'
 }
 
 const StatsCard: React.FC<StatsCardProps> = ({ icon, label, value, color }) => {
-  const colors: { [key: string]: string } = {
+  const colorClasses: Record<StatsCardProps['color'], string> = {
     indigo: 'bg-indigo-100 text-indigo-600',
     green: 'bg-green-100 text-green-600',
     blue: 'bg-blue-100 text-blue-600',
-    red: 'bg-red-100 text-red-600',
-  };
+    red: 'bg-red-100 text-red-600'
+  }
+
+  const formattedValue = typeof value === 'number' ? value.toLocaleString('pt-BR') : '0'
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100">
       <div className="flex items-center gap-4">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colors[color]}`}>
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorClasses[color]}`}>
           {icon}
         </div>
         <div>
           <p className="text-sm font-medium text-gray-500">{label}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
+          <p className="text-2xl font-bold text-gray-900">{formattedValue}</p>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 interface MetricCardProps {
   title: string
@@ -399,25 +401,25 @@ export default function DashboardOptimized() {
             <StatsCard
               icon={<Users className="w-6 h-6 text-indigo-500" />}
               label="Total de Registros"
-              value={stats?.total_records?.toLocaleString('pt-BR') || '0'}
+              value={stats?.total_records ?? 0}
               color="indigo"
             />
             <StatsCard
               icon={<CheckCircle className="w-6 h-6 text-green-500" />}
               label="Corridas Ofertadas"
-              value={stats?.total_ofertadas?.toLocaleString('pt-BR') || '0'}
+              value={stats?.total_ofertadas ?? 0}
               color="green"
             />
             <StatsCard
               icon={<TrendingUp className="w-6 h-6 text-blue-500" />}
               label="Corridas Aceitas"
-              value={stats?.total_aceitas?.toLocaleString('pt-BR') || '0'}
+              value={stats?.total_aceitas ?? 0}
               color="blue"
             />
             <StatsCard
               icon={<XCircle className="w-6 h-6 text-red-500" />}
               label="Corridas Rejeitadas"
-              value={stats?.total_rejeitadas?.toLocaleString('pt-BR') || '0'}
+              value={stats?.total_rejeitadas ?? 0}
               color="red"
             />
           </div>
@@ -508,7 +510,7 @@ export default function DashboardOptimized() {
                   <BarChart3 className="w-8 h-8 text-blue-600" />
                 </div>
                 <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Total de Registros</p>
-                <p className="text-2xl font-bold text-gray-900">{stats?.total_records?.toLocaleString() || '0'}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats?.total_records?.toLocaleString('pt-BR') || '0'}</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
