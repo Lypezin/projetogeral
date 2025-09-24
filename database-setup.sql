@@ -114,9 +114,13 @@ DECLARE
   viewer_is_admin BOOLEAN := FALSE;
   viewer_pracas TEXT[] := '{}';
 BEGIN
-  SELECT is_admin, allowed_pracas INTO viewer_is_admin, viewer_pracas
-  FROM public.user_permissions
-  WHERE user_id = viewer;
+  IF viewer IS NULL THEN
+    viewer_is_admin := TRUE;
+  ELSE
+    SELECT is_admin, allowed_pracas INTO viewer_is_admin, viewer_pracas
+    FROM public.user_permissions
+    WHERE user_id = viewer;
+  END IF;
 
   RETURN QUERY
   WITH dados AS (
@@ -128,9 +132,11 @@ BEGIN
       (sub_pracas IS NULL OR array_length(sub_pracas,1)=0 OR d.sub_praca = ANY(sub_pracas)) AND
       (origens IS NULL OR array_length(origens,1)=0 OR d.origem = ANY(origens)) AND
       (
-        viewer_is_admin OR
-        viewer_pracas IS NULL OR array_length(viewer_pracas,1)=0 OR
-        d.praca = ANY(viewer_pracas) OR 'Todas' = ANY(viewer_pracas)
+        viewer_is_admin
+        OR viewer_pracas IS NULL
+        OR COALESCE(array_length(viewer_pracas,1),0) = 0
+        OR d.praca = ANY(viewer_pracas)
+        OR 'Todas' = ANY(viewer_pracas)
       )
   )
   SELECT
@@ -169,9 +175,13 @@ DECLARE
   viewer_is_admin BOOLEAN := FALSE;
   viewer_pracas TEXT[] := '{}';
 BEGIN
-  SELECT is_admin, allowed_pracas INTO viewer_is_admin, viewer_pracas
-  FROM public.user_permissions
-  WHERE user_id = viewer;
+  IF viewer IS NULL THEN
+    viewer_is_admin := TRUE;
+  ELSE
+    SELECT is_admin, allowed_pracas INTO viewer_is_admin, viewer_pracas
+    FROM public.user_permissions
+    WHERE user_id = viewer;
+  END IF;
 
   RETURN QUERY
   WITH dados AS (
@@ -183,9 +193,11 @@ BEGIN
       (sub_pracas IS NULL OR array_length(sub_pracas,1)=0 OR d.sub_praca = ANY(sub_pracas)) AND
       (origens IS NULL OR array_length(origens,1)=0 OR d.origem = ANY(origens)) AND
       (
-        viewer_is_admin OR
-        viewer_pracas IS NULL OR array_length(viewer_pracas,1)=0 OR
-        d.praca = ANY(viewer_pracas) OR 'Todas' = ANY(viewer_pracas)
+        viewer_is_admin
+        OR viewer_pracas IS NULL
+        OR COALESCE(array_length(viewer_pracas,1),0) = 0
+        OR d.praca = ANY(viewer_pracas)
+        OR 'Todas' = ANY(viewer_pracas)
       )
   )
   SELECT
@@ -223,9 +235,13 @@ DECLARE
   viewer_is_admin BOOLEAN := FALSE;
   viewer_pracas TEXT[] := '{}';
 BEGIN
-  SELECT is_admin, allowed_pracas INTO viewer_is_admin, viewer_pracas
-  FROM public.user_permissions
-  WHERE user_id = viewer;
+  IF viewer IS NULL THEN
+    viewer_is_admin := TRUE;
+  ELSE
+    SELECT is_admin, allowed_pracas INTO viewer_is_admin, viewer_pracas
+    FROM public.user_permissions
+    WHERE user_id = viewer;
+  END IF;
 
   RETURN QUERY
   WITH dados AS (
@@ -237,9 +253,11 @@ BEGIN
       (sub_pracas IS NULL OR array_length(sub_pracas,1)=0 OR d.sub_praca = ANY(sub_pracas)) AND
       (origens IS NULL OR array_length(origens,1)=0 OR d.origem = ANY(origens)) AND
       (
-        viewer_is_admin OR
-        viewer_pracas IS NULL OR array_length(viewer_pracas,1)=0 OR
-        d.praca = ANY(viewer_pracas) OR 'Todas' = ANY(viewer_pracas)
+        viewer_is_admin
+        OR viewer_pracas IS NULL
+        OR COALESCE(array_length(viewer_pracas,1),0) = 0
+        OR d.praca = ANY(viewer_pracas)
+        OR 'Todas' = ANY(viewer_pracas)
       )
   )
   SELECT
