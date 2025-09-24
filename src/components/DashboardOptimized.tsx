@@ -391,40 +391,26 @@ export default function DashboardOptimized() {
                     color="red"
                   />
                 </div>
+              </div>
+            )}
 
-                {(filters.startDate || filters.endDate) && (
-                  <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm font-medium text-blue-800">Filtros Ativos:</span>
-                      <span className="text-sm text-blue-700">
-                        {filters.startDate && `De ${new Date(filters.startDate + 'T00:00:00').toLocaleDateString('pt-BR')}`}
-                        {filters.startDate && filters.endDate && ' até '}
-                        {filters.endDate && `${new Date(filters.endDate + 'T00:00:00').toLocaleDateString('pt-BR')}`}
-                      </span>
+            {/* Gráficos */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">
+                      Performance por Praça
+                    </h3>
+                    <p className="text-gray-600 text-sm mt-1">Top 10 praças com mais movimento</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">Total</span>
+                    <div className="text-lg font-bold text-gray-900">
+                      {pracaData.length} praças
                     </div>
                   </div>
-                )}
-              </div>
-
-          {/* Gráficos */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            {/* Gráfico de barras por praça */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Performance por Praça
-                  </h3>
-                  <p className="text-gray-600 text-sm mt-1">Top 10 praças com mais movimento</p>
                 </div>
-                <div className="text-right">
-                  <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">Total</span>
-                  <div className="text-lg font-bold text-gray-900">
-                    {pracaData.length} praças
-                  </div>
-                </div>
-              </div>
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
