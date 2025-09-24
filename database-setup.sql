@@ -33,8 +33,8 @@ CREATE INDEX IF NOT EXISTS idx_user_permissions_is_admin ON user_permissions(is_
 ALTER TABLE public.user_permissions ENABLE ROW LEVEL SECURITY;
 
 -- Função auxiliar para verificar se o usuário é admin.
--- SECURITY DEFINER permite que a função execute com privilégios elevados,
--- evitando o problema de recursão infinita nas políticas RLS.
+-- SECURITY DEFINER permite que a função execute com os privilégios do seu criador (postgres),
+-- ignorando as políticas RLS para esta verificação específica e quebrando o loop de recursão.
 CREATE OR REPLACE FUNCTION public.is_claims_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
@@ -46,15 +46,27 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- As políticas são DELETADAS e recriadas para garantir que a versão mais recente seja utilizada.
+-- Limpeza de políticas antigas para garantir um estado limpo
 DROP POLICY IF EXISTS "Allow all access for admins" ON public.user_permissions;
-CREATE POLICY "Allow all access for admins" ON public.user_permissions
-  FOR ALL USING (public.is_claims_admin());
-
 DROP POLICY IF EXISTS "Users can view and edit own permissions" ON public.user_permissions;
-CREATE POLICY "Users can view and edit own permissions" ON public.user_permissions
-  FOR ALL USING (auth.uid() = user_id)
+DROP POLICY IF EXISTS "Admins can manage all permissions" ON public.user_permissions;
+DROP POLICY IF EXISTS "Users can view own permissions" ON public.user_permissions;
+DROP POLICY IF EXISTS "Admins can view all permissions" ON public.user_permissions;
+DROP POLICY IF EXISTS "Users can insert own permissions" ON public.user_permissions;
+DROP POLICY IF EXISTS "Users can update own permissions" ON public.user_permissions;
+
+-- Política 1: Admins podem fazer qualquer coisa na tabela de permissões.
+CREATE POLICY "1_Admins can do anything" ON public.user_permissions
+  FOR ALL
+  USING (public.is_claims_admin())
+  WITH CHECK (public.is_claims_admin());
+
+-- Política 2: Usuários podem gerenciar (ver, criar, atualizar) seu próprio registro de permissão.
+CREATE POLICY "2_Users can manage their own permissions" ON public.user_permissions
+  FOR ALL
+  USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
+
 
 -- =============================================
 -- 4. FUNÇÃO E TRIGGER PARA ATUALIZAR `updated_at`
@@ -232,19 +244,19 @@ BEGIN
   RETURN QUERY
   WITH filtered_data AS (
     SELECT *
-    FROM public.delivery_data
+    FROM public.delivery_data d -- ALIAS ADICIONADO
     WHERE 
       -- Filtro de data robusto com conversão para timestamp
-      (start_date IS NULL OR data_do_periodo >= start_date::TIMESTAMP) AND
-      (end_date IS NULL OR data_do_periodo < (end_date::TIMESTAMP + INTERVAL '1 day')) AND
+      (start_date IS NULL OR d.data_do_periodo >= start_date::TIMESTAMP) AND
+      (end_date IS NULL OR d.data_do_periodo < (end_date::TIMESTAMP + INTERVAL '1 day')) AND
       -- Filtro de sub-praças
-      (sub_pracas IS NULL OR array_length(sub_pracas, 1) = 0 OR sub_praca = ANY(sub_pracas)) AND
+      (sub_pracas IS NULL OR array_length(sub_pracas, 1) = 0 OR d.sub_praca = ANY(sub_pracas)) AND
       -- Filtro de origens
-      (origens IS NULL OR array_length(origens, 1) = 0 OR origem = ANY(origens)) AND
+      (origens IS NULL OR array_length(origens, 1) = 0 OR d.origem = ANY(origens)) AND
       (
         -- Lógica de permissão de praça
         COALESCE(is_user_admin, FALSE) OR
-        praca = ANY(user_pracas) OR
+        d.praca = ANY(user_pracas) OR -- ALIAS USADO
         'Todas' = ANY(user_pracas)
       )
   )
@@ -324,11 +336,16 @@ BEGIN
       )
   )
   SELECT 
-    period_start,
-    SUM(numero_de_corridas_ofertadas),
-    SUM(numero_de_corridas_aceitas),
-    SUM(numero_de_corridas_rejeitadas),
-    SUM(numero_de_corridas_completadas)
+    (CASE 
+      WHEN grouping_period = 'day' THEN date_trunc('day', fd.data_do_periodo)
+      WHEN grouping_period = 'week' THEN date_trunc('week', fd.data_do_periodo)
+      WHEN grouping_period = 'month' THEN date_trunc('month', fd.data_do_periodo)
+      ELSE date_trunc('day', fd.data_do_periodo)
+    END)::TIMESTAMP AS period_start,
+    SUM(fd.numero_de_corridas_ofertadas)::BIGINT AS ofertadas,
+    SUM(fd.numero_de_corridas_aceitas)::BIGINT AS aceitas,
+    SUM(fd.numero_de_corridas_rejeitadas)::BIGINT AS rejeitadas,
+    SUM(fd.numero_de_corridas_completadas)::BIGINT AS completadas
   INTO period_start, ofertadas, aceitas, rejeitadas, completadas
   FROM (
     SELECT 

@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase-client'
 import { UserPermission } from '@/lib/supabase-client'
-import { adminManager } from '@/lib/admin-utils'
+import AdminManager from '@/lib/admin-utils'
 
 interface AuthContextType {
   user: User | null
@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('🔍 AuthProvider: Buscando permissões para user_id:', userId)
 
       // Usar o AdminManager robusto
-      const permissions = await adminManager.getUserPermissions(userId)
+      const permissions = await AdminManager.getUserPermissions(userId)
       
       if (permissions) {
         console.log('✅ AuthProvider: Permissões encontradas:', permissions)
@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Se não encontrou permissões, tentar criar automaticamente
       console.log('⚠️ AuthProvider: Permissões não encontradas, tentando criar automaticamente...')
-      const createdPermissions = await adminManager.createAdminPermissions(userId)
+      const createdPermissions = await AdminManager.createAdminPermissions(userId)
       
       if (createdPermissions) {
         console.log('✅ AuthProvider: Permissões criadas automaticamente:', createdPermissions)
@@ -130,42 +130,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Inicializar apenas uma vez
     initializeAuth()
 
-    // Escutar mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: any, session: any) => {
-        if (!mounted) return
-
-        console.log('🔄 AuthProvider: Auth state changed:', event, session?.user?.email)
-
-        setUser(session?.user ?? null)
-
-        if (session?.user) {
-          console.log('🔍 AuthProvider: Buscando permissões após mudança de estado...')
-          const userPermissions = await fetchUserPermissions(session.user.id)
-          if (mounted) {
-            setPermissions(userPermissions)
-          }
-        } else {
-          if (mounted) {
-            setPermissions(null)
-          }
-        }
-
-        if (mounted) {
-          setLoading(false)
-        }
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log(`🔄 AuthProvider: Auth state changed: ${event}`, session?.user?.email)
+      setUser(session?.user ?? null)
+      setPermissions(null) // Reset permissions on auth change
+      if (session?.user) {
+        console.log(`🔍 AuthProvider: Buscando permissões após mudança de estado...`)
+        fetchUserPermissions(session.user.id)
+      } else {
+        setLoading(false)
       }
-    )
+    })
 
     return () => {
-      console.log('🧹 AuthProvider: Cleanup do useEffect')
-      mounted = false
       subscription.unsubscribe()
     }
-  }, []) // Removido fetchUserPermissions para evitar loops
+  }, [fetchUserPermissions])
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
