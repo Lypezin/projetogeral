@@ -38,6 +38,7 @@ ALTER TABLE public.user_permissions ENABLE ROW LEVEL SECURITY;
 CREATE OR REPLACE FUNCTION public.is_claims_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
+  -- A verificação é feita sem acionar RLS, quebrando o loop.
   RETURN EXISTS (
     SELECT 1
     FROM public.user_permissions
@@ -46,7 +47,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Limpeza de políticas antigas para garantir um estado limpo
+-- Limpeza completa de todas as políticas antigas para garantir um estado inicial limpo.
+DROP POLICY IF EXISTS "Admins have full access" ON public.user_permissions;
+DROP POLICY IF EXISTS "Users can manage their own permissions" ON public.user_permissions;
 DROP POLICY IF EXISTS "Allow all access for admins" ON public.user_permissions;
 DROP POLICY IF EXISTS "Users can view and edit own permissions" ON public.user_permissions;
 DROP POLICY IF EXISTS "Admins can manage all permissions" ON public.user_permissions;
@@ -56,17 +59,15 @@ DROP POLICY IF EXISTS "Users can insert own permissions" ON public.user_permissi
 DROP POLICY IF EXISTS "Users can update own permissions" ON public.user_permissions;
 
 -- Política 1: Admins podem fazer qualquer coisa na tabela de permissões.
-CREATE POLICY "1_Admins can do anything" ON public.user_permissions
+CREATE POLICY "Admins have full access" ON public.user_permissions
   FOR ALL
-  USING (public.is_claims_admin())
-  WITH CHECK (public.is_claims_admin());
+  USING (public.is_claims_admin());
 
 -- Política 2: Usuários podem gerenciar (ver, criar, atualizar) seu próprio registro de permissão.
-CREATE POLICY "2_Users can manage their own permissions" ON public.user_permissions
+CREATE POLICY "Users can manage their own permissions" ON public.user_permissions
   FOR ALL
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
-
 
 -- =============================================
 -- 4. FUNÇÃO E TRIGGER PARA ATUALIZAR `updated_at`
