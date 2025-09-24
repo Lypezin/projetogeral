@@ -31,25 +31,17 @@ CREATE INDEX IF NOT EXISTS idx_user_permissions_is_admin ON user_permissions(is_
 -- 3. RLS (Row Level Security) - Segurança a nível de linha
 ALTER TABLE user_permissions ENABLE ROW LEVEL SECURITY;
 
--- Política: Usuários só podem ver suas próprias permissões
-CREATE POLICY "Users can view own permissions" ON user_permissions
+-- As políticas são recriadas para garantir que a versão mais recente seja utilizada.
+DROP POLICY IF EXISTS "Users can view own permissions" ON public.user_permissions;
+CREATE POLICY "Users can view own permissions" ON public.user_permissions
   FOR SELECT USING (auth.uid() = user_id);
 
--- Política: Apenas admins podem modificar permissões
-CREATE POLICY "Only admins can modify permissions" ON user_permissions
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM user_permissions
-      WHERE user_id = auth.uid() AND is_admin = TRUE
-    )
-  );
-
--- Política adicional: Permitir que usuários sem permissões definidas as criem
-CREATE POLICY "Users can insert own permissions" ON user_permissions
+DROP POLICY IF EXISTS "Users can insert own permissions" ON public.user_permissions;
+CREATE POLICY "Users can insert own permissions" ON public.user_permissions
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Política adicional: Permitir que usuários atualizem suas próprias permissões
-CREATE POLICY "Users can update own permissions" ON user_permissions
+DROP POLICY IF EXISTS "Users can update own permissions" ON public.user_permissions;
+CREATE POLICY "Users can update own permissions" ON public.user_permissions
   FOR UPDATE USING (auth.uid() = user_id);
 
 -- 4. FUNÇÃO E TRIGGER PARA ATUALIZAR `updated_at`
@@ -69,22 +61,49 @@ BEFORE UPDATE ON public.user_permissions
 FOR EACH ROW
 EXECUTE FUNCTION public.handle_updated_at();
 
--- 4. FUNÇÕES RPC PARA CONSULTAS OTIMIZADAS
--- Estas funções permitem consultar dados com alta performance mesmo com +1M registros
+-- =============================================
+-- FUNÇÕES RPC (Remote Procedure Call)
+-- =============================================
 
--- 4.1 Função para obter estatísticas gerais (dashboard principal)
-CREATE OR REPLACE FUNCTION get_dashboard_stats(
-  user_id_param UUID DEFAULT NULL,
-  start_date DATE DEFAULT NULL,
-  end_date DATE DEFAULT NULL,
-  sub_pracas TEXT[] DEFAULT NULL,
-  origens TEXT[] DEFAULT NULL
+-- As funções são DELETADAS e recriadas para garantir que a versão mais recente seja utilizada,
+-- especialmente quando o tipo de retorno é alterado (de JSON para TABLE), o que causa erros com CREATE OR REPLACE.
+DROP FUNCTION IF EXISTS public.get_dashboard_stats(UUID, DATE, DATE, TEXT[], TEXT[]);
+DROP FUNCTION IF EXISTS public.get_data_by_praca(UUID, DATE, DATE, TEXT[], TEXT[]);
+DROP FUNCTION IF EXISTS public.get_data_by_period(UUID, TEXT, DATE, DATE, TEXT[], TEXT[]);
+
+--------------------------------------------------------------------------------
+-- 1. get_dashboard_stats
+-- Retorna estatísticas gerais do dashboard.
+-- Parâmetros:
+--   user_id_param: ID do usuário para filtrar dados com base nas permissões.
+--   start_date: Data de início do filtro.
+--   end_date: Data de fim do filtro.
+--   sub_pracas: Array de sub-praças para filtrar.
+--   origens: Array de origens para filtrar.
+--------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_dashboard_stats(
+    user_id_param UUID,
+    start_date DATE DEFAULT NULL,
+    end_date DATE DEFAULT NULL,
+    sub_pracas TEXT[] DEFAULT NULL,
+    origens TEXT[] DEFAULT NULL
 )
-RETURNS JSON AS $$
+RETURNS TABLE (
+    total_records BIGINT,
+    total_ofertadas BIGINT,
+    total_aceitas BIGINT,
+    total_rejeitadas BIGINT,
+    total_completadas BIGINT,
+    total_canceladas BIGINT,
+    total_pedidos_concluidos BIGINT,
+    total_taxas BIGINT,
+    data_range JSON,
+    pracas_disponiveis TEXT[]
+)
+AS $$
 DECLARE
   user_pracas TEXT[];
   is_user_admin BOOLEAN;
-  result JSON;
 BEGIN
   -- Verificar permissões do usuário
   IF user_id_param IS NOT NULL THEN
@@ -102,7 +121,7 @@ BEGIN
 
   -- Se não é admin e não tem permissões específicas, retornar vazio
   IF NOT COALESCE(is_user_admin, FALSE) AND (user_pracas IS NULL OR array_length(user_pracas, 1) = 0) THEN
-    RETURN '{"error": "Acesso negado"}';
+    RETURN QUERY SELECT 0, 0, 0, 0, 0, 0, 0, 0, '{"start_date": null, "end_date": null}', '{}';
   END IF;
 
   -- Construir query com base nas permissões
@@ -123,45 +142,59 @@ BEGIN
         (user_pracas IS NOT NULL AND praca = ANY(user_pracas))
       )
   )
-  SELECT json_build_object(
-    'total_records', COUNT(*),
-    'total_ofertadas', SUM(numero_de_corridas_ofertadas),
-    'total_aceitas', SUM(numero_de_corridas_aceitas),
-    'total_rejeitadas', SUM(numero_de_corridas_rejeitadas),
-    'total_completadas', SUM(numero_de_corridas_completadas),
-    'total_canceladas', SUM(numero_de_corridas_canceladas_pela_pessoa_entregadora),
-    'total_pedidos_concluidos', SUM(numero_de_pedidos_aceitos_e_concluidos),
-    'total_taxas', SUM(soma_das_taxas_das_corridas_aceitas),
-    'data_range', json_build_object(
+  SELECT 
+    COUNT(*),
+    SUM(numero_de_corridas_ofertadas),
+    SUM(numero_de_corridas_aceitas),
+    SUM(numero_de_corridas_rejeitadas),
+    SUM(numero_de_corridas_completadas),
+    SUM(numero_de_corridas_canceladas_pela_pessoa_entregadora),
+    SUM(numero_de_pedidos_aceitos_e_concluidos),
+    SUM(soma_das_taxas_das_corridas_aceitas),
+    json_build_object(
       'start_date', MIN(data_do_periodo::DATE),
       'end_date', MAX(data_do_periodo::DATE)
     ),
-    'pracas_disponiveis', (
+    (
       SELECT array_agg(DISTINCT praca)
       FROM filtered_data
       WHERE praca IS NOT NULL AND praca != ''
     )
-  )
-  INTO result
+  INTO total_records, total_ofertadas, total_aceitas, total_rejeitadas, total_completadas, total_canceladas, total_pedidos_concluidos, total_taxas, data_range, pracas_disponiveis
   FROM filtered_data;
 
-  RETURN result;
+  RETURN;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 4.2 Função para obter dados por praça (gráficos)
-CREATE OR REPLACE FUNCTION get_data_by_praca(
-  user_id_param UUID DEFAULT NULL,
-  start_date DATE DEFAULT NULL,
-  end_date DATE DEFAULT NULL,
-  sub_pracas TEXT[] DEFAULT NULL,
-  origens TEXT[] DEFAULT NULL
+--------------------------------------------------------------------------------
+-- 2. get_data_by_praca
+-- Retorna dados agrupados por praça.
+-- Parâmetros:
+--   user_id_param: ID do usuário para filtrar dados com base nas permissões.
+--   start_date: Data de início do filtro.
+--   end_date: Data de fim do filtro.
+--   sub_pracas: Array de sub-praças para filtrar.
+--   origens: Array de origens para filtrar.
+--------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_data_by_praca(
+    user_id_param UUID,
+    start_date DATE DEFAULT NULL,
+    end_date DATE DEFAULT NULL,
+    sub_pracas TEXT[] DEFAULT NULL,
+    origens TEXT[] DEFAULT NULL
 )
-RETURNS JSON AS $$
+RETURNS TABLE (
+    praca TEXT,
+    ofertadas BIGINT,
+    aceitas BIGINT,
+    rejeitadas BIGINT,
+    completadas BIGINT
+)
+AS $$
 DECLARE
   user_pracas TEXT[];
   is_user_admin BOOLEAN;
-  result JSON;
 BEGIN
   -- Verificar permissões do usuário
   IF user_id_param IS NOT NULL THEN
@@ -178,7 +211,7 @@ BEGIN
 
   -- Se não é admin e não tem permissões específicas, retornar vazio
   IF NOT COALESCE(is_user_admin, FALSE) AND (user_pracas IS NULL OR array_length(user_pracas, 1) = 0) THEN
-    RETURN '{"error": "Acesso negado"}';
+    RETURN;
   END IF;
 
   -- Obter dados agrupados por praça
@@ -198,44 +231,52 @@ BEGIN
         (user_pracas IS NOT NULL AND praca = ANY(user_pracas))
       )
   )
-  SELECT json_agg(
-    json_build_object(
-      'praca', praca,
-      'ofertadas', total_ofertadas,
-      'aceitas', total_aceitas,
-      'rejeitadas', total_rejeitadas,
-      'completadas', total_completadas
-    )
-  )
-  INTO result
-  FROM (
-    SELECT 
-      praca,
-      SUM(numero_de_corridas_ofertadas) as total_ofertadas,
-      SUM(numero_de_corridas_aceitas) as total_aceitas,
-      SUM(numero_de_corridas_rejeitadas) as total_rejeitadas,
-      SUM(numero_de_corridas_completadas) as total_completadas
-    FROM filtered_data
-    WHERE praca IS NOT NULL AND praca != ''
-    GROUP BY praca
-    ORDER BY total_ofertadas DESC
-  ) grouped_data;
+  SELECT 
+    praca,
+    SUM(numero_de_corridas_ofertadas),
+    SUM(numero_de_corridas_aceitas),
+    SUM(numero_de_corridas_rejeitadas),
+    SUM(numero_de_corridas_completadas)
+  INTO praca, ofertadas, aceitas, rejeitadas, completadas
+  FROM filtered_data
+  WHERE praca IS NOT NULL AND praca != ''
+  GROUP BY praca
+  ORDER BY ofertadas DESC;
 
-  RETURN COALESCE(result, '[]'::JSON);
+  RETURN;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 4.3 Função para obter dados por período (timeline)
-CREATE OR REPLACE FUNCTION get_data_by_period(
-  user_id_param UUID DEFAULT NULL,
-  start_date DATE DEFAULT NULL,
-  end_date DATE DEFAULT NULL
+--------------------------------------------------------------------------------
+-- 3. get_data_by_period
+-- Retorna dados agrupados por período (dia, semana, mês).
+-- Parâmetros:
+--   user_id_param: ID do usuário para filtrar dados com base nas permissões.
+--   grouping_period: 'day', 'week', 'month' (ou outro período).
+--   start_date: Data de início do filtro.
+--   end_date: Data de fim do filtro.
+--   sub_pracas: Array de sub-praças para filtrar.
+--   origens: Array de origens para filtrar.
+--------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_data_by_period(
+    user_id_param UUID,
+    grouping_period TEXT, -- 'day', 'week', 'month'
+    start_date DATE DEFAULT NULL,
+    end_date DATE DEFAULT NULL,
+    sub_pracas TEXT[] DEFAULT NULL,
+    origens TEXT[] DEFAULT NULL
 )
-RETURNS JSON AS $$
+RETURNS TABLE (
+    period_start TIMESTAMP,
+    ofertadas BIGINT,
+    aceitas BIGINT,
+    rejeitadas BIGINT,
+    completadas BIGINT
+)
+AS $$
 DECLARE
   user_pracas TEXT[];
   is_user_admin BOOLEAN;
-  result JSON;
 BEGIN
   -- Verificar permissões do usuário
   IF user_id_param IS NOT NULL THEN
@@ -252,7 +293,7 @@ BEGIN
 
   -- Se não é admin e não tem permissões específicas, retornar vazio
   IF NOT COALESCE(is_user_admin, FALSE) AND (user_pracas IS NULL OR array_length(user_pracas, 1) = 0) THEN
-    RETURN '{"error": "Acesso negado"}';
+    RETURN;
   END IF;
 
   -- Obter dados agrupados por data
@@ -267,29 +308,31 @@ BEGIN
         (user_pracas IS NOT NULL AND praca = ANY(user_pracas))
       )
   )
-  SELECT json_agg(
-    json_build_object(
-      'data', data_periodo,
-      'ofertadas', total_ofertadas,
-      'aceitas', total_aceitas,
-      'rejeitadas', total_rejeitadas,
-      'completadas', total_completadas
-    ) ORDER BY data_periodo
-  )
-  INTO result
+  SELECT 
+    period_start,
+    SUM(numero_de_corridas_ofertadas),
+    SUM(numero_de_corridas_aceitas),
+    SUM(numero_de_corridas_rejeitadas),
+    SUM(numero_de_corridas_completadas)
+  INTO period_start, ofertadas, aceitas, rejeitadas, completadas
   FROM (
     SELECT 
-      data_do_periodo::DATE as data_periodo,
+      CASE 
+        WHEN grouping_period = 'day' THEN data_do_periodo::DATE
+        WHEN grouping_period = 'week' THEN date_trunc('week', data_do_periodo::DATE)
+        WHEN grouping_period = 'month' THEN date_trunc('month', data_do_periodo::DATE)
+        ELSE data_do_periodo::DATE
+      END AS period_start,
       SUM(numero_de_corridas_ofertadas) as total_ofertadas,
       SUM(numero_de_corridas_aceitas) as total_aceitas,
       SUM(numero_de_corridas_rejeitadas) as total_rejeitadas,
       SUM(numero_de_corridas_completadas) as total_completadas
     FROM filtered_data
-    GROUP BY data_do_periodo::DATE
-    ORDER BY data_do_periodo::DATE
+    GROUP BY period_start
+    ORDER BY period_start
   ) grouped_data;
 
-  RETURN COALESCE(result, '[]'::JSON);
+  RETURN;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
