@@ -3,24 +3,15 @@ import { createBrowserClient } from '@supabase/ssr'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dggswtzjozluleqlckdg.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRnZ3N3dHpqb3psdWxlcWxja2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1NzMzMjMsImV4cCI6MjA3NDE0OTMyM30.tSo7qK713vy5z5Kz1RFq61TlLK3Zj1Pqoz-RpRCE4q4'
 
-// Singleton para evitar múltiplas instâncias
-let supabaseInstance: any = null
-let instanceCount = 0
+let supabaseInstance: ReturnType<typeof createBrowserClient> | null = null
 
 export const createClient = () => {
-  instanceCount++
-  console.log(`🔄 Supabase createClient chamado (${instanceCount} vezes)`)
-
   if (!supabaseInstance) {
     supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey)
-    console.log('✅ Supabase client criado (singleton)')
-  } else {
-    console.log('♻️ Supabase client reutilizado (singleton)')
   }
   return supabaseInstance
 }
 
-// Tipos para os dados da empresa
 export interface DadosEmpresa {
   id?: number
   data_do_periodo: string
@@ -45,11 +36,10 @@ export interface DadosEmpresa {
   created_at?: string
 }
 
-// Tipos para permissões de usuário
 export interface UserPermission {
   id?: number
   user_id: string
-  allowed_pracas: string[] // Array de praças que o usuário pode acessar
+  allowed_pracas: string[]
   is_admin: boolean
   created_at?: string
   updated_at?: string

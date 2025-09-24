@@ -133,10 +133,8 @@ BEGIN
       (origens IS NULL OR array_length(origens,1)=0 OR d.origem = ANY(origens)) AND
       (
         viewer_is_admin
-        OR viewer_pracas IS NULL
-        OR COALESCE(array_length(viewer_pracas,1),0) = 0
-        OR d.praca = ANY(viewer_pracas)
         OR 'Todas' = ANY(viewer_pracas)
+        OR d.praca = ANY(viewer_pracas)
       )
   )
   SELECT
@@ -277,18 +275,8 @@ END;
 $$;
 
 -- 8. Garantir que o usuário padrão tenha permissão
-INSERT INTO public.user_permissions (user_id, is_admin, allowed_pracas)
-SELECT id, TRUE, ARRAY['Guarulhos','São Paulo','Campinas','Santos','Todas']
-FROM auth.users
-ON CONFLICT (user_id) DO UPDATE
-SET is_admin = TRUE,
-    allowed_pracas = EXCLUDED.allowed_pracas,
-    updated_at = NOW();
-
--- Sincronizar admin_users novamente
-INSERT INTO public.admin_users(user_id)
-SELECT user_id FROM public.user_permissions WHERE is_admin = TRUE
-ON CONFLICT (user_id) DO NOTHING;
+/* Removemos a atribuição automática de praças.
+   O admin deve configurar as permissões manualmente via aplicação. */
 
 -- Verificar resultado
 SELECT * FROM public.user_permissions;
