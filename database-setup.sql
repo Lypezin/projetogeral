@@ -29,31 +29,36 @@ CREATE INDEX IF NOT EXISTS idx_user_permissions_user_id ON user_permissions(user
 CREATE INDEX IF NOT EXISTS idx_user_permissions_is_admin ON user_permissions(is_admin);
 
 -- 3. RLS (Row Level Security) - Segurança a nível de linha
-ALTER TABLE user_permissions ENABLE ROW LEVEL SECURITY;
+-- =============================================
+ALTER TABLE public.user_permissions ENABLE ROW LEVEL SECURITY;
 
--- As políticas são recriadas para garantir que a versão mais recente seja utilizada.
-DROP POLICY IF EXISTS "Admins can manage all permissions" ON public.user_permissions;
-DROP POLICY IF EXISTS "Users can view own permissions" ON public.user_permissions;
-CREATE POLICY "Users can view own permissions" ON public.user_permissions
-  FOR SELECT USING (auth.uid() = user_id);
+-- Função auxiliar para verificar se o usuário é admin.
+-- SECURITY DEFINER permite que a função execute com privilégios elevados,
+-- evitando o problema de recursão infinita nas políticas RLS.
+CREATE OR REPLACE FUNCTION public.is_claims_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1
+    FROM public.user_permissions
+    WHERE user_id = auth.uid() AND is_admin = TRUE
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-DROP POLICY IF EXISTS "Admins can view all permissions" ON public.user_permissions;
-CREATE POLICY "Admins can view all permissions" ON public.user_permissions
-  FOR SELECT USING ((
-    SELECT is_admin
-    FROM user_permissions
-    WHERE user_id = auth.uid()
-  ));
+-- As políticas são DELETADAS e recriadas para garantir que a versão mais recente seja utilizada.
+DROP POLICY IF EXISTS "Allow all access for admins" ON public.user_permissions;
+CREATE POLICY "Allow all access for admins" ON public.user_permissions
+  FOR ALL USING (public.is_claims_admin());
 
-DROP POLICY IF EXISTS "Users can insert own permissions" ON public.user_permissions;
-CREATE POLICY "Users can insert own permissions" ON public.user_permissions
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can view and edit own permissions" ON public.user_permissions;
+CREATE POLICY "Users can view and edit own permissions" ON public.user_permissions
+  FOR ALL USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can update own permissions" ON public.user_permissions;
-CREATE POLICY "Users can update own permissions" ON public.user_permissions
-  FOR UPDATE USING (auth.uid() = user_id);
-
+-- =============================================
 -- 4. FUNÇÃO E TRIGGER PARA ATUALIZAR `updated_at`
+-- =============================================
 -- Esta função será chamada por um trigger sempre que uma linha for atualizada.
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS TRIGGER AS $$
@@ -227,7 +232,7 @@ BEGIN
   RETURN QUERY
   WITH filtered_data AS (
     SELECT *
-    FROM delivery_data
+    FROM public.delivery_data
     WHERE 
       -- Filtro de data robusto com conversão para timestamp
       (start_date IS NULL OR data_do_periodo >= start_date::TIMESTAMP) AND
