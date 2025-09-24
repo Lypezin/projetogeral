@@ -75,7 +75,12 @@ export default function DashboardOptimized() {
 
   // Handlers para filtro de data
   const handleDateFilterChange = useCallback((field: 'startDate' | 'endDate', value: string) => {
-    setDateFilter(prev => ({ ...prev, [field]: value }))
+    console.log(`📅 Mudando ${field} para:`, value)
+    setDateFilter(prev => {
+      const newState = { ...prev, [field]: value }
+      console.log('📅 Novo estado dateFilter:', newState)
+      return newState
+    })
   }, [])
 
   const handleApplyDateFilter = useCallback(() => {
@@ -90,9 +95,8 @@ export default function DashboardOptimized() {
       ...newFilters
     }))
     
-    // Forçar recarregamento imediato dos dados
-    console.log('🚀 Forçando recarregamento com filtros:', newFilters)
     // Recarregamento será feito pelo useEffect
+    console.log('🚀 Aplicando filtros - recarregamento será feito pelo useEffect')
   }, [dateFilter])
 
   const handleClearDateFilter = useCallback(() => {
@@ -160,6 +164,7 @@ export default function DashboardOptimized() {
   // Recarregar dados quando filtros de data mudarem
   useEffect(() => {
     console.log('🔄 useEffect filtros - user:', user?.id, 'filters:', filters)
+    console.log('🔄 useEffect filtros - dateFilter:', dateFilter)
     if (user && (filters.startDate || filters.endDate)) {
       console.log('📊 Recarregando dados com filtros:', filters)
       // Aguardar um pouco para garantir que o estado foi atualizado
@@ -280,8 +285,14 @@ export default function DashboardOptimized() {
         <DateFilter
           startDate={dateFilter.startDate}
           endDate={dateFilter.endDate}
-          onStartDateChange={(date) => handleDateFilterChange('startDate', date)}
-          onEndDateChange={(date) => handleDateFilterChange('endDate', date)}
+          onStartDateChange={(date) => {
+            console.log('📅 Mudando data inicial para:', date)
+            handleDateFilterChange('startDate', date)
+          }}
+          onEndDateChange={(date) => {
+            console.log('📅 Mudando data final para:', date)
+            handleDateFilterChange('endDate', date)
+          }}
           onApplyFilter={handleApplyDateFilter}
           onClearFilter={handleClearDateFilter}
         />
