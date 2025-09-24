@@ -20,7 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [permissions, setPermissions] = useState<UserPermission | null>(null)
-  const [loading, setLoading] = useState(false) // Iniciar com false
+  const [loading, setLoading] = useState(true) // Iniciar com true
   const supabase = createClient()
 
   const fetchUserPermissions = useCallback(async (userId: string) => {
@@ -76,32 +76,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true
-    let isInitialized = false
 
     console.log('🚀 AuthProvider: Iniciando useEffect')
 
     // Função para inicializar autenticação
     const initializeAuth = async () => {
-      if (isInitialized) {
-        console.log('⚠️ AuthProvider: Já inicializado, pulando...')
-        return
-      }
-
-      isInitialized = true
-      console.log('🔄 AuthProvider: Inicializando autenticação...')
-
       try {
-        setLoading(true)
+        console.log('🔄 AuthProvider: Verificando sessão...')
         
-        // Aguardar um pouco para evitar race conditions
-        await new Promise(resolve => setTimeout(resolve, 100))
-
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-        if (!mounted) {
-          console.log('⚠️ AuthProvider: Componente desmontado, cancelando...')
-          return
-        }
+        if (!mounted) return
 
         if (sessionError) {
           console.error('❌ AuthProvider: Erro ao verificar sessão:', sessionError)
@@ -142,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Inicializar apenas uma vez
+    // Inicializar
     initializeAuth()
 
     // Escutar mudanças de autenticação
@@ -177,7 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, []) // Removido fetchUserPermissions para evitar loops
+  }, [fetchUserPermissions])
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
