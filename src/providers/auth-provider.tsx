@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
-import { User } from '@supabase/supabase-js'
+import { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase-client'
 import { adminManager } from '@/lib/admin-utils'
 import { UserPermission } from '@/lib/supabase-client'
@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription }
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       console.log(`🔄 AuthProvider: Auth state changed: ${event}`, session?.user?.email)
       setUser(session?.user ?? null)
       setPermissions(null) // Reset permissions on auth change
