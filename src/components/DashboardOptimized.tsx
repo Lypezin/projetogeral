@@ -80,10 +80,14 @@ export default function DashboardOptimized() {
 
   const handleApplyDateFilter = useCallback(() => {
     console.log('📅 Aplicando filtro de data:', dateFilter)
-    setFilters(prev => ({
-      ...prev,
+    const newFilters = {
       startDate: dateFilter.startDate,
       endDate: dateFilter.endDate
+    }
+    console.log('🔄 Novos filtros:', newFilters)
+    setFilters(prev => ({
+      ...prev,
+      ...newFilters
     }))
     // Recarregar dados será feito pelo useEffect
   }, [dateFilter])
@@ -111,8 +115,8 @@ export default function DashboardOptimized() {
 
       // Carregar dados em paralelo COM filtros
       const [statsResult, pracaResult] = await Promise.all([
-        dashboardAPI.getDashboardStats(undefined, filters.startDate, filters.endDate, filters.subPracas, filters.origens),
-        dashboardAPI.getDataByPraca(undefined, filters.startDate, filters.endDate, filters.subPracas, filters.origens)
+        dashboardAPI.getDashboardStats(user?.id, filters.startDate, filters.endDate, filters.subPracas, filters.origens),
+        dashboardAPI.getDataByPraca(user?.id, filters.startDate, filters.endDate, filters.subPracas, filters.origens)
       ])
 
       if (statsResult.error) {
@@ -149,7 +153,9 @@ export default function DashboardOptimized() {
 
   // Recarregar dados quando filtros de data mudarem
   useEffect(() => {
+    console.log('🔄 useEffect filtros - user:', user?.id, 'filters:', filters)
     if (user && (filters.startDate || filters.endDate)) {
+      console.log('📊 Recarregando dados com filtros:', filters)
       loadDashboardData(true)
     }
   }, [filters.startDate, filters.endDate, user, loadDashboardData])

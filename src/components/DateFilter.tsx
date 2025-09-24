@@ -33,43 +33,71 @@ export default function DateFilter({
   const [selectedDateType, setSelectedDateType] = useState<'start' | 'end' | null>(null)
   const supabase = createClient()
 
-  // Buscar datas disponíveis
+  // Buscar datas disponíveis usando RPC (sem limitação de 1000 registros)
   const fetchAvailableDates = async () => {
     try {
       setLoadingDates(true)
-      const { data, error } = await supabase
-        .from('delivery_data')
-        .select('data_do_periodo')
-        .not('data_do_periodo', 'is', null)
-        .order('data_do_periodo', { ascending: true })
+      console.log('📅 Buscando datas disponíveis via RPC...')
+      
+      const { data, error } = await supabase.rpc('get_available_dates')
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ Erro na RPC get_available_dates:', error)
+        throw error
+      }
 
-      // Agrupar por data e contar registros
-      const dateMap = new Map<string, number>()
-      data?.forEach((row: any) => {
-        const date = row.data_do_periodo?.split('T')[0] // Pegar apenas a data
-        if (date) {
-          dateMap.set(date, (dateMap.get(date) || 0) + 1)
-        }
-      })
+      console.log('✅ Datas encontradas via RPC:', data?.length || 0)
 
-      // Converter para array e formatar
-      const datesWithData: DateWithData[] = Array.from(dateMap.entries())
-        .map(([date, count]) => ({
-          date,
-          count,
-          formatted: new Date(date).toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          })
-        }))
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      // Converter para o formato esperado
+      const datesWithData: DateWithData[] = (data || []).map((row: any) => ({
+        date: row.date,
+        count: parseInt(row.count),
+        formatted: row.formatted
+      }))
 
       setAvailableDates(datesWithData)
+      console.log('📊 Datas processadas:', datesWithData.length)
     } catch (error) {
-      console.error('Erro ao buscar datas disponíveis:', error)
+      console.error('💥 Erro ao buscar datas disponíveis:', error)
+      
+      // Fallback: tentar método tradicional (limitado a 1000)
+      try {
+        console.log('🔄 Tentando método fallback...')
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('delivery_data')
+          .select('data_do_periodo')
+          .not('data_do_periodo', 'is', null)
+          .order('data_do_periodo', { ascending: true })
+          .limit(1000)
+
+        if (fallbackError) throw fallbackError
+
+        const dateMap = new Map<string, number>()
+        fallbackData?.forEach((row: any) => {
+          const date = row.data_do_periodo?.split('T')[0]
+          if (date) {
+            dateMap.set(date, (dateMap.get(date) || 0) + 1)
+          }
+        })
+
+        const datesWithData: DateWithData[] = Array.from(dateMap.entries())
+          .map(([date, count]) => ({
+            date,
+            count,
+            formatted: new Date(date).toLocaleDateString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            })
+          }))
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+        setAvailableDates(datesWithData)
+        console.log('⚠️ Usando fallback limitado a 1000 registros')
+      } catch (fallbackError) {
+        console.error('💥 Erro no fallback:', fallbackError)
+        setAvailableDates([])
+      }
     } finally {
       setLoadingDates(false)
     }
