@@ -62,6 +62,14 @@ export class DashboardAPI {
         origens
       })
 
+      // Verificar se as datas estão no formato correto
+      if (startDate) {
+        console.log('📅 Data inicial formatada:', new Date(startDate).toISOString().split('T')[0])
+      }
+      if (endDate) {
+        console.log('📅 Data final formatada:', new Date(endDate).toISOString().split('T')[0])
+      }
+
       const { data, error } = await this.supabase.rpc('get_dashboard_stats', {
         user_id_param: userId || null,
         start_date: startDate || null,

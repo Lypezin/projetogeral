@@ -168,10 +168,14 @@ export default function DashboardOptimized() {
     console.log('🔄 useEffect filtros - dateFilter:', dateFilter)
     if (user && (filters.startDate || filters.endDate)) {
       console.log('📊 Recarregando dados com filtros:', filters)
+      console.log('📊 Filtros de data específicos:', {
+        startDate: filters.startDate,
+        endDate: filters.endDate
+      })
       // Aguardar um pouco para garantir que o estado foi atualizado
       setTimeout(() => {
         loadDashboardData(true)
-      }, 100)
+      }, 200)
     }
   }, [filters.startDate, filters.endDate, user, loadDashboardData])
 
@@ -317,7 +321,7 @@ export default function DashboardOptimized() {
                       <span className="text-sm text-blue-700">
                         {filters.startDate && `De ${new Date(filters.startDate).toLocaleDateString('pt-BR')}`}
                         {filters.startDate && filters.endDate && ' até '}
-                        {filters.endDate && `Até ${new Date(filters.endDate).toLocaleDateString('pt-BR')}`}
+                        {filters.endDate && `${new Date(filters.endDate).toLocaleDateString('pt-BR')}`}
                       </span>
                     </div>
                   </div>
