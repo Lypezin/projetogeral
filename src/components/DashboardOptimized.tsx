@@ -369,48 +369,48 @@ export default function DashboardOptimized() {
                   <StatsCard
                     icon={<Users className="w-6 h-6 text-indigo-500" />}
                     label="Total de Registros"
-                    value={dashboardStats?.total_records?.toLocaleString('pt-BR') || '0'}
+                    value={stats?.total_records?.toLocaleString('pt-BR') || '0'}
                     color="indigo"
                   />
                   <StatsCard
                     icon={<CheckCircle className="w-6 h-6 text-green-500" />}
                     label="Corridas Ofertadas"
-                    value={dashboardStats?.total_ofertadas?.toLocaleString('pt-BR') || '0'}
+                    value={stats?.total_ofertadas?.toLocaleString('pt-BR') || '0'}
                     color="green"
                   />
                   <StatsCard
                     icon={<TrendingUp className="w-6 h-6 text-blue-500" />}
                     label="Corridas Aceitas"
-                    value={dashboardStats?.total_aceitas?.toLocaleString('pt-BR') || '0'}
+                    value={stats?.total_aceitas?.toLocaleString('pt-BR') || '0'}
                     color="blue"
                   />
                   <StatsCard
                     icon={<XCircle className="w-6 h-6 text-red-500" />}
                     label="Corridas Rejeitadas"
-                    value={dashboardStats?.total_rejeitadas?.toLocaleString('pt-BR') || '0'}
+                    value={stats?.total_rejeitadas?.toLocaleString('pt-BR') || '0'}
                     color="red"
                   />
                 </div>
               </div>
-            )}
+          </div>
 
-            {/* Gráficos */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">
-                      Performance por Praça
-                    </h3>
-                    <p className="text-gray-600 text-sm mt-1">Top 10 praças com mais movimento</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">Total</span>
-                    <div className="text-lg font-bold text-gray-900">
-                      {pracaData.length} praças
-                    </div>
+          {/* Gráficos */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Performance por Praça
+                  </h3>
+                  <p className="text-gray-600 text-sm mt-1">Top 10 praças com mais movimento</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">Total</span>
+                  <div className="text-lg font-bold text-gray-900">
+                    {pracaData.length} praças
                   </div>
                 </div>
+              </div>
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
