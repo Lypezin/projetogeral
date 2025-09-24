@@ -250,72 +250,219 @@ export default function DateFilter({
         </div>
       </div>
 
-      {/* Status do Filtro */}
+      {/* Status do Filtro com Visualização Detalhada */}
       {(startDate || endDate) && (
-        <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-800">
-                🎯 Filtro ativo:
-              </p>
-              <p className="text-sm text-blue-700">
-                {startDate && `De ${new Date(startDate).toLocaleDateString('pt-BR')}`}
-                {startDate && endDate && ' até '}
-                {endDate && `Até ${new Date(endDate).toLocaleDateString('pt-BR')}`}
+        <div className="mt-6 space-y-4">
+          {/* Filtro Ativo */}
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <p className="text-sm font-medium text-blue-800">
+                  🎯 Filtro Ativo
+                </p>
+              </div>
+              <button
+                onClick={onClearFilter}
+                className="text-blue-600 hover:text-blue-800 transition-colors p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="text-sm text-blue-700">
+              {startDate && (
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium">📅 Data Inicial:</span>
+                  <span className="bg-blue-100 px-2 py-1 rounded text-blue-800 font-semibold">
+                    {new Date(startDate).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+              )}
+              {endDate && (
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">📅 Data Final:</span>
+                  <span className="bg-blue-100 px-2 py-1 rounded text-blue-800 font-semibold">
+                    {new Date(endDate).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Dias Filtrados */}
+          {startDate && endDate && (
+            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <p className="text-sm font-medium text-green-800">
+                  📊 Dias Filtrados
+                </p>
+              </div>
+              <div className="text-sm text-green-700">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-medium">📈 Período selecionado:</span>
+                  <span className="bg-green-100 px-2 py-1 rounded text-green-800 font-semibold">
+                    {Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} dias
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">🗓️ De:</span>
+                  <span className="bg-green-100 px-2 py-1 rounded text-green-800 font-semibold">
+                    {new Date(startDate).toLocaleDateString('pt-BR')}
+                  </span>
+                  <span className="text-green-600">até</span>
+                  <span className="bg-green-100 px-2 py-1 rounded text-green-800 font-semibold">
+                    {new Date(endDate).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Resumo dos Dados */}
+          <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              <p className="text-sm font-medium text-purple-800">
+                📈 Resumo dos Dados
               </p>
             </div>
-            <button
-              onClick={onClearFilter}
-              className="text-blue-600 hover:text-blue-800 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {availableDates.length}
+                </div>
+                <div className="text-purple-700">Total de dias</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {startDate && endDate ? 
+                    availableDates.filter(d => 
+                      d.date >= startDate && d.date <= endDate
+                    ).length : 0
+                  }
+                </div>
+                <div className="text-purple-700">Dias no filtro</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {startDate && endDate ? 
+                    availableDates.filter(d => 
+                      d.date >= startDate && d.date <= endDate
+                    ).reduce((sum, d) => sum + d.count, 0) : 0
+                  }
+                </div>
+                <div className="text-purple-700">Registros no filtro</div>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Modal de Seleção de Datas */}
+      {/* Modal de Seleção de Datas Melhorado */}
       {showDatePicker && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-96 overflow-hidden">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                📅 Selecionar {selectedDateType === 'start' ? 'Data Inicial' : 'Data Final'}
-              </h3>
+          <div className="bg-white rounded-2xl p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  📅 Selecionar {selectedDateType === 'start' ? 'Data Inicial' : 'Data Final'}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {availableDates.length} dias com dados disponíveis
+                </p>
+              </div>
               <button
                 onClick={() => {
                   setShowDatePicker(false)
                   setSelectedDateType(null)
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <div className="max-h-64 overflow-y-auto">
+            <div className="max-h-96 overflow-y-auto">
               {loadingDates ? (
-                <div className="text-center py-8">
-                  <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  <p className="text-gray-500">Carregando datas...</p>
+                <div className="text-center py-12">
+                  <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-500 text-lg">Carregando datas disponíveis...</p>
+                  <p className="text-gray-400 text-sm mt-2">Buscando todos os dias com dados</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {availableDates.map((dateInfo) => (
-                    <button
-                      key={dateInfo.date}
-                      onClick={() => handleDateSelect(dateInfo.date)}
-                      className="text-left p-3 hover:bg-blue-50 rounded-lg transition-colors border border-gray-100"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-gray-900">{dateInfo.formatted}</p>
-                          <p className="text-sm text-gray-500">{dateInfo.count} registros</p>
-                        </div>
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="space-y-4">
+                  {/* Estatísticas */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">{availableDates.length}</div>
+                      <div className="text-sm text-blue-700">Total de dias</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {availableDates.reduce((sum, d) => sum + d.count, 0)}
                       </div>
-                    </button>
-                  ))}
+                      <div className="text-sm text-purple-700">Total de registros</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        {Math.round(availableDates.reduce((sum, d) => sum + d.count, 0) / availableDates.length)}
+                      </div>
+                      <div className="text-sm text-green-700">Média por dia</div>
+                    </div>
+                  </div>
+
+                  {/* Lista de Datas */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {availableDates.map((dateInfo) => {
+                      const isSelected = (selectedDateType === 'start' && dateInfo.date === startDate) ||
+                                       (selectedDateType === 'end' && dateInfo.date === endDate)
+                      const isInRange = startDate && endDate && 
+                                       dateInfo.date >= startDate && dateInfo.date <= endDate
+                      
+                      return (
+                        <button
+                          key={dateInfo.date}
+                          onClick={() => handleDateSelect(dateInfo.date)}
+                          className={`text-left p-4 rounded-xl transition-all duration-200 border-2 ${
+                            isSelected 
+                              ? 'bg-blue-100 border-blue-300 shadow-md transform scale-105' 
+                              : isInRange
+                              ? 'bg-green-50 border-green-200 hover:bg-green-100'
+                              : 'bg-gray-50 border-gray-200 hover:bg-blue-50 hover:border-blue-200'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${
+                                isSelected ? 'bg-blue-500' : 
+                                isInRange ? 'bg-green-500' : 'bg-gray-400'
+                              }`}></div>
+                              <span className="font-medium text-gray-900">{dateInfo.formatted}</span>
+                            </div>
+                            {isSelected && (
+                              <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
+                                Selecionado
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">
+                              {dateInfo.count} registros
+                            </span>
+                            <div className={`text-xs px-2 py-1 rounded-full ${
+                              dateInfo.count > 100 ? 'bg-red-100 text-red-700' :
+                              dateInfo.count > 50 ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-green-100 text-green-700'
+                            }`}>
+                              {dateInfo.count > 100 ? 'Alto' : 
+                               dateInfo.count > 50 ? 'Médio' : 'Baixo'}
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>

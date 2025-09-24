@@ -156,7 +156,10 @@ export default function DashboardOptimized() {
     console.log('🔄 useEffect filtros - user:', user?.id, 'filters:', filters)
     if (user && (filters.startDate || filters.endDate)) {
       console.log('📊 Recarregando dados com filtros:', filters)
-      loadDashboardData(true)
+      // Aguardar um pouco para garantir que o estado foi atualizado
+      setTimeout(() => {
+        loadDashboardData(true)
+      }, 100)
     }
   }, [filters.startDate, filters.endDate, user, loadDashboardData])
 
@@ -286,6 +289,21 @@ export default function DashboardOptimized() {
                   Analytics Dashboard
                 </h1>
                 <p className="text-gray-600 mt-2 text-lg">Insights em tempo real dos seus dados de entrega</p>
+                
+                {/* Indicador de Filtros Ativos */}
+                {(filters.startDate || filters.endDate) && (
+                  <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm font-medium text-blue-800">Filtros Ativos:</span>
+                      <span className="text-sm text-blue-700">
+                        {filters.startDate && `De ${new Date(filters.startDate).toLocaleDateString('pt-BR')}`}
+                        {filters.startDate && filters.endDate && ' até '}
+                        {filters.endDate && `Até ${new Date(filters.endDate).toLocaleDateString('pt-BR')}`}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
               <button
                 onClick={handleRefresh}
