@@ -150,7 +150,7 @@ export class DashboardAPI {
     endDate?: string
   ): Promise<{ data: DataByPeriod[] | null; error: any }> {
     try {
-      const { data, error } = await this.supabase.rpc('get_data_by_period', {
+      const { data, error } = await this.supabase.rpc('get_data_by_period_v2', {
         user_id_param: userId || null,
         start_date: startDate || null,
         end_date: endDate || null
