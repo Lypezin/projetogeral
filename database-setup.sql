@@ -32,9 +32,18 @@ CREATE INDEX IF NOT EXISTS idx_user_permissions_is_admin ON user_permissions(is_
 ALTER TABLE user_permissions ENABLE ROW LEVEL SECURITY;
 
 -- As políticas são recriadas para garantir que a versão mais recente seja utilizada.
+DROP POLICY IF EXISTS "Admins can manage all permissions" ON public.user_permissions;
 DROP POLICY IF EXISTS "Users can view own permissions" ON public.user_permissions;
 CREATE POLICY "Users can view own permissions" ON public.user_permissions
   FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins can view all permissions" ON public.user_permissions;
+CREATE POLICY "Admins can view all permissions" ON public.user_permissions
+  FOR SELECT USING ((
+    SELECT is_admin
+    FROM user_permissions
+    WHERE user_id = auth.uid()
+  ));
 
 DROP POLICY IF EXISTS "Users can insert own permissions" ON public.user_permissions;
 CREATE POLICY "Users can insert own permissions" ON public.user_permissions
@@ -214,7 +223,8 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Obter dados agrupados por praça
+  -- Construir e executar a query principal
+  RETURN QUERY
   WITH filtered_data AS (
     SELECT *
     FROM delivery_data
@@ -227,23 +237,23 @@ BEGIN
       -- Filtro de origens
       (origens IS NULL OR array_length(origens, 1) = 0 OR origem = ANY(origens)) AND
       (
-        COALESCE(is_user_admin, FALSE) = TRUE OR 
-        (user_pracas IS NOT NULL AND praca = ANY(user_pracas))
+        -- Lógica de permissão de praça
+        COALESCE(is_user_admin, FALSE) OR
+        praca = ANY(user_pracas) OR
+        'Todas' = ANY(user_pracas)
       )
   )
   SELECT 
-    praca,
-    SUM(numero_de_corridas_ofertadas),
-    SUM(numero_de_corridas_aceitas),
-    SUM(numero_de_corridas_rejeitadas),
-    SUM(numero_de_corridas_completadas)
-  INTO praca, ofertadas, aceitas, rejeitadas, completadas
-  FROM filtered_data
-  WHERE praca IS NOT NULL AND praca != ''
-  GROUP BY praca
-  ORDER BY ofertadas DESC;
+    fd.praca,
+    SUM(fd.numero_de_corridas_ofertadas)::BIGINT,
+    SUM(fd.numero_de_corridas_aceitas)::BIGINT,
+    SUM(fd.numero_de_corridas_rejeitadas)::BIGINT,
+    SUM(fd.numero_de_corridas_completadas)::BIGINT
+  FROM filtered_data AS fd
+  WHERE fd.praca IS NOT NULL AND fd.praca != ''
+  GROUP BY fd.praca
+  ORDER BY SUM(fd.numero_de_corridas_ofertadas) DESC;
 
-  RETURN;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
