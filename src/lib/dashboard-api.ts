@@ -70,7 +70,7 @@ export class DashboardAPI {
         console.log('📅 Data final formatada:', new Date(endDate).toISOString().split('T')[0])
       }
 
-      const { data, error } = await this.supabase.rpc('get_dashboard_stats', {
+      const { data, error } = await this.supabase.rpc('get_dashboard_stats_v2', {
         user_id_param: userId || null,
         start_date: startDate || null,
         end_date: endDate || null,
@@ -111,9 +111,9 @@ export class DashboardAPI {
     endDate?: string,
     subPracas?: string[],
     origens?: string[]
-  ): Promise<{ data: DataByPraca[] | null; error: any }> {
+  ): Promise<{ data: any; error: any }> {
     try {
-      const { data, error } = await this.supabase.rpc('get_data_by_praca', {
+      const { data, error } = await this.supabase.rpc('get_data_by_praca_v2', {
         user_id_param: userId || null,
         start_date: startDate || null,
         end_date: endDate || null,

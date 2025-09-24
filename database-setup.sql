@@ -81,12 +81,12 @@ EXECUTE FUNCTION public.handle_updated_at();
 
 -- As funções são DELETADAS e recriadas para garantir que a versão mais recente seja utilizada,
 -- especialmente quando o tipo de retorno é alterado (de JSON para TABLE), o que causa erros com CREATE OR REPLACE.
-DROP FUNCTION IF EXISTS public.get_dashboard_stats(UUID, DATE, DATE, TEXT[], TEXT[]);
-DROP FUNCTION IF EXISTS public.get_data_by_praca(UUID, DATE, DATE, TEXT[], TEXT[]);
-DROP FUNCTION IF EXISTS public.get_data_by_period(UUID, TEXT, DATE, DATE, TEXT[], TEXT[]);
+DROP FUNCTION IF EXISTS public.get_dashboard_stats_v2(UUID, DATE, DATE, TEXT[], TEXT[]);
+DROP FUNCTION IF EXISTS public.get_data_by_praca_v2(UUID, DATE, DATE, TEXT[], TEXT[]);
+DROP FUNCTION IF EXISTS public.get_data_by_period_v2(UUID, TEXT, DATE, DATE, TEXT[], TEXT[]);
 
 --------------------------------------------------------------------------------
--- 1. get_dashboard_stats
+-- 1. get_dashboard_stats_v2
 -- Retorna estatísticas gerais do dashboard.
 -- Parâmetros:
 --   user_id_param: ID do usuário para filtrar dados com base nas permissões.
@@ -95,7 +95,7 @@ DROP FUNCTION IF EXISTS public.get_data_by_period(UUID, TEXT, DATE, DATE, TEXT[]
 --   sub_pracas: Array de sub-praças para filtrar.
 --   origens: Array de origens para filtrar.
 --------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.get_dashboard_stats(
+CREATE OR REPLACE FUNCTION public.get_dashboard_stats_v2(
     user_id_param UUID,
     start_date DATE DEFAULT NULL,
     end_date DATE DEFAULT NULL,
@@ -182,7 +182,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 --------------------------------------------------------------------------------
--- 2. get_data_by_praca
+-- 2. get_data_by_praca_v2
 -- Retorna dados agrupados por praça.
 -- Parâmetros:
 --   user_id_param: ID do usuário para filtrar dados com base nas permissões.
@@ -191,7 +191,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 --   sub_pracas: Array de sub-praças para filtrar.
 --   origens: Array de origens para filtrar.
 --------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.get_data_by_praca(
+CREATE OR REPLACE FUNCTION public.get_data_by_praca_v2(
     user_id_param UUID,
     start_date DATE DEFAULT NULL,
     end_date DATE DEFAULT NULL,
@@ -263,7 +263,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 --------------------------------------------------------------------------------
--- 3. get_data_by_period
+-- 3. get_data_by_period_v2
 -- Retorna dados agrupados por período (dia, semana, mês).
 -- Parâmetros:
 --   user_id_param: ID do usuário para filtrar dados com base nas permissões.
@@ -273,7 +273,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 --   sub_pracas: Array de sub-praças para filtrar.
 --   origens: Array de origens para filtrar.
 --------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.get_data_by_period(
+CREATE OR REPLACE FUNCTION public.get_data_by_period_v2(
     user_id_param UUID,
     grouping_period TEXT, -- 'day', 'week', 'month'
     start_date DATE DEFAULT NULL,
