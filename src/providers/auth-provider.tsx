@@ -3,8 +3,8 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase-client'
+import { AdminManager } from '@/lib/admin-utils' // Corrigido para named import
 import { UserPermission } from '@/lib/supabase-client'
-import AdminManager from '@/lib/admin-utils'
 
 interface AuthContextType {
   user: User | null

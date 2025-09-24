@@ -8,6 +8,36 @@ import { dashboardAPI, DashboardStats, DataByPraca } from '@/lib/dashboard-api'
 import DashboardFilters, { DashboardFiltersType } from './DashboardFilters'
 import DateFilter from './DateFilter'
 
+interface StatsCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  color: string;
+}
+
+const StatsCard: React.FC<StatsCardProps> = ({ icon, label, value, color }) => {
+  const colors: { [key: string]: string } = {
+    indigo: 'bg-indigo-100 text-indigo-600',
+    green: 'bg-green-100 text-green-600',
+    blue: 'bg-blue-100 text-blue-600',
+    red: 'bg-red-100 text-red-600',
+  };
+
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100">
+      <div className="flex items-center gap-4">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colors[color]}`}>
+          {icon}
+        </div>
+        <div>
+          <p className="text-sm font-medium text-gray-500">{label}</p>
+          <p className="text-2xl font-bold text-gray-900">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface MetricCardProps {
   title: string
   value: number
