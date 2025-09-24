@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase-client'
-import { AdminManager } from '@/lib/admin-utils' // Corrigido para named import
+import { adminManager } from '@/lib/admin-utils'
 import { UserPermission } from '@/lib/supabase-client'
 
 interface AuthContextType {
@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('🔍 AuthProvider: Buscando permissões para user_id:', userId)
 
       // Usar o AdminManager robusto
-      const permissions = await AdminManager.getUserPermissions(userId)
+      const permissions = await adminManager.getUserPermissions(userId)
       
       if (permissions) {
         console.log('✅ AuthProvider: Permissões encontradas:', permissions)
@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Se não encontrou permissões, tentar criar automaticamente
       console.log('⚠️ AuthProvider: Permissões não encontradas, tentando criar automaticamente...')
-      const createdPermissions = await AdminManager.createAdminPermissions(userId)
+      const createdPermissions = await adminManager.createAdminPermissions(userId)
       
       if (createdPermissions) {
         console.log('✅ AuthProvider: Permissões criadas automaticamente:', createdPermissions)
@@ -85,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isInitialized = true
 
       try {
+        setLoading(true)
         console.log('🔄 AuthProvider: Verificando sessão...')
         
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
