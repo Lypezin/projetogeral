@@ -366,32 +366,30 @@ export default function DashboardOptimized() {
 
           {/* Cards de métricas */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <StatsCard
-                    icon={<Users className="w-6 h-6 text-indigo-500" />}
-                    label="Total de Registros"
-                    value={stats?.total_records?.toLocaleString('pt-BR') || '0'}
-                    color="indigo"
-                  />
-                  <StatsCard
-                    icon={<CheckCircle className="w-6 h-6 text-green-500" />}
-                    label="Corridas Ofertadas"
-                    value={stats?.total_ofertadas?.toLocaleString('pt-BR') || '0'}
-                    color="green"
-                  />
-                  <StatsCard
-                    icon={<TrendingUp className="w-6 h-6 text-blue-500" />}
-                    label="Corridas Aceitas"
-                    value={stats?.total_aceitas?.toLocaleString('pt-BR') || '0'}
-                    color="blue"
-                  />
-                  <StatsCard
-                    icon={<XCircle className="w-6 h-6 text-red-500" />}
-                    label="Corridas Rejeitadas"
-                    value={stats?.total_rejeitadas?.toLocaleString('pt-BR') || '0'}
-                    color="red"
-                  />
-                </div>
-              </div>
+            <StatsCard
+              icon={<Users className="w-6 h-6 text-indigo-500" />}
+              label="Total de Registros"
+              value={stats?.total_records?.toLocaleString('pt-BR') || '0'}
+              color="indigo"
+            />
+            <StatsCard
+              icon={<CheckCircle className="w-6 h-6 text-green-500" />}
+              label="Corridas Ofertadas"
+              value={stats?.total_ofertadas?.toLocaleString('pt-BR') || '0'}
+              color="green"
+            />
+            <StatsCard
+              icon={<TrendingUp className="w-6 h-6 text-blue-500" />}
+              label="Corridas Aceitas"
+              value={stats?.total_aceitas?.toLocaleString('pt-BR') || '0'}
+              color="blue"
+            />
+            <StatsCard
+              icon={<XCircle className="w-6 h-6 text-red-500" />}
+              label="Corridas Rejeitadas"
+              value={stats?.total_rejeitadas?.toLocaleString('pt-BR') || '0'}
+              color="red"
+            />
           </div>
 
           {/* Gráficos */}
@@ -480,7 +478,7 @@ export default function DashboardOptimized() {
                   <BarChart3 className="w-8 h-8 text-blue-600" />
                 </div>
                 <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Total de Registros</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.total_records.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats?.total_records?.toLocaleString() || '0'}</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -488,9 +486,9 @@ export default function DashboardOptimized() {
                 </div>
                 <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Período dos Dados</p>
                 <p className="text-lg font-bold text-gray-900">
-                  {stats.data_range.start_date}
+                  {stats?.data_range?.start_date || 'N/A'}
                 </p>
-                <p className="text-sm text-gray-600">até {stats.data_range.end_date}</p>
+                <p className="text-sm text-gray-600">até {stats?.data_range?.end_date || 'N/A'}</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -498,7 +496,7 @@ export default function DashboardOptimized() {
                 </div>
                 <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Valor Total (Taxas)</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  R$ {stats.total_taxas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {stats?.total_taxas?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
                 </p>
               </div>
             </div>
